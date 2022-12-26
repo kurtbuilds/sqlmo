@@ -10,6 +10,8 @@ use crate::schema::{Column, Schema, Table, Type};
 
 mod model;
 
+/// This is currently empty.
+#[derive(Debug, Clone, Default)]
 pub struct Options {}
 
 impl Schema {

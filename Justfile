@@ -8,6 +8,7 @@ run *ARGS:
 
 test:
     cargo test
+    cargo test --features openapi
 
 ####
 bootstrap:
