@@ -1,3 +1,25 @@
+<div id="top"></div>
+
+<p align="center">
+<a href="https://github.com/kurtbuilds/sqldiff/graphs/contributors">
+    <img src="https://img.shields.io/github/contributors/kurtbuilds/sqldiff.svg?style=flat-square" alt="GitHub Contributors" />
+</a>
+<a href="https://github.com/kurtbuilds/sqldiff/stargazers">
+    <img src="https://img.shields.io/github/stars/kurtbuilds/sqldiff.svg?style=flat-square" alt="Stars" />
+</a>
+<a href="https://github.com/kurtbuilds/sqldiff/actions">
+    <img src="https://img.shields.io/github/actions/workflow/status/kurtbuilds/sqldiff/test.yaml?style=flat-square" alt="Build Status" />
+</a>
+<a href="https://crates.io/crates/sqldiff">
+    <img src="https://img.shields.io/crates/d/sqldiff?style=flat-square" alt="Downloads" />
+</a>
+<a href="https://crates.io/crates/sqldiff">
+    <img src="https://img.shields.io/crates/v/sqldiff?style=flat-square" alt="Crates.io" />
+</a>
+
+</p>
+
+# `sqldiff`
 `sqldiff` is a set of primitives to load SQL representations in a standardized form (`sqldiff::Schema`), calculate differences between 
 schemas (`sqldiff::Migration`), and generate SQL to apply the migration (`sqldiff::Migration::to_sql`).
 
@@ -10,7 +32,7 @@ auto-generate migrations.
 
 Current tools that support this:
 
-- (`ormlite`)[https://github.com/kurtbuilds/ormlite]
+- (`sqldiff`)[https://github.com/kurtbuilds/sqldiff]
 
 If you use `sqldiff`, submit a PR to be added to this list.
 
