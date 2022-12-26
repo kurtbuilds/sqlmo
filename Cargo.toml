@@ -1,0 +1,18 @@
+[package]
+name = "sqldiff"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.66"
+itertools = "0.10.5"
+openapiv3 = { git = "https://github.com/kurtbuilds/openapiv3", optional = true }
+sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
+tokio = { version = "1.22.0", features = ["full"] }
+convert_case = "0.6.0"
+serde_yaml = { verison = "0.9.14", optional = true }
+
+[features]
+openapi = ["openapiv3", "serde_yaml"]

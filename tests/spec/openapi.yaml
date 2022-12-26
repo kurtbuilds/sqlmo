@@ -1,0 +1,609 @@
+openapi: 3.0.3
+info:
+  title: ''
+  version: ''
+servers:
+  - url: https://www.example.com
+paths:
+  /clients:
+    get:
+      operationId: getClients
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          style: form
+        - in: query
+          name: offset
+          schema:
+            type: integer
+          style: form
+        - in: query
+          name: sortby
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+        - in: query
+          name: sortorder
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+        - in: query
+          name: status
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+        - in: query
+          name: types
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetClientsResponse'
+  /home:
+    get:
+      operationId: getHome
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetHomeResponse'
+  /swtraining/freetrainings:
+    get:
+      operationId: getSwtrainingFreetrainings
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSwtrainingFreetrainingsResponse'
+  /activities/list:
+    get:
+      operationId: getActivities
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          style: form
+        - in: query
+          name: offset
+          schema:
+            type: integer
+          style: form
+        - in: query
+          name: orderby
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: ordertype
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: type
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: action_date
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: est_complete_date
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: employee_name
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: activity
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: activity_name
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: client
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: client_name
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: invoice
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: invoice_name
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: description
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: notes
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: billing_code_name
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: time_billing_taxable_name
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: group_name
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: filter
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: view
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: employee
+          schema:
+            type: integer
+          style: form
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetActivitiesResponse'
+  /employeelist:
+    get:
+      operationId: getEmployees
+      parameters:
+        - in: query
+          name: sw_user
+          schema:
+            type: integer
+          style: form
+        - in: query
+          name: active
+          schema:
+            type: string
+          style: form
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetEmployeesResponse'
+  /orderlist:
+    get:
+      operationId: getOrders
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          style: form
+        - in: query
+          name: offset
+          schema:
+            type: integer
+          style: form
+        - in: query
+          name: orderby
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: ordertype
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: filter
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: active
+          schema:
+            type: boolean
+          style: form
+        - in: query
+          name: name
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: search_term
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: client
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: client_name
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: order_date
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: order_date_from
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: order_date_to
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: vendor
+          schema:
+            type: string
+          style: form
+        - in: query
+          name: vendor_name
+          schema:
+            type: string
+          style: form
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetOrdersResponse'
+  /activities/list/notifications:
+    get:
+      operationId: getActivitiesNotifications
+      parameters:
+        - in: query
+          name: is_read
+          schema:
+            type: boolean
+          style: form
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetActivitiesNotificationsResponse'
+components:
+  securitySchemes:
+    Session:
+      type: apiKey
+      in: cookie
+      name: sessid
+  schemas:
+    Client:
+      type: object
+      properties:
+        active:
+          type: boolean
+        address_code_1_id:
+          type: integer
+        address_code_1_name:
+          type: string
+        address_code_2_id:
+          type: integer
+        address_code_2_name:
+          type: string
+        address_id:
+          type: string
+        client_deposit_balance:
+          type: string
+        client_deposits_applied:
+          type: string
+        client_deposits_received:
+          type: string
+        client_payments_applied:
+          type: string
+        client_sidemark:
+          type: string
+        copy_address:
+          type: boolean
+        copy_purchase:
+          type: string
+        created_at:
+          type: integer
+        custom_city:
+          type: string
+        custom_country:
+          type: string
+        custom_foreign_id:
+          type: string
+        custom_name:
+          type: string
+        custom_postal_code:
+          type: string
+        custom_state:
+          type: string
+        custom_street_address_1:
+          type: string
+        custom_street_address_2:
+          type: string
+        designer_id:
+          type: integer
+        designer_name:
+          type: string
+        email:
+          type: string
+        fax_number:
+          type: string
+        fax_number_ext:
+          type: string
+        id:
+          type: integer
+        invoices_visible_by_default:
+          type: boolean
+        is_specify_only:
+          type: boolean
+        last_modified_at:
+          type: integer
+        mailing_city:
+          type: string
+        mailing_country:
+          type: string
+        mailing_name:
+          type: string
+        mailing_postal_code:
+          type: string
+        mailing_state:
+          type: string
+        mailing_street_address_1:
+          type: string
+        mailing_street_address_2:
+          type: string
+        mark_up_deposit_percent:
+          type: string
+        mobile_number:
+          type: string
+        notes:
+          type: string
+        paypal_payments_enabled:
+          type: boolean
+        payscape_ach_payments_enabled:
+          type: boolean
+        payscape_payments_enabled:
+          type: boolean
+        pinterest:
+          type: string
+        primary_number:
+          type: string
+        primary_number_ext:
+          type: string
+        proposals_visible_by_default:
+          type: boolean
+        related_client_id:
+          type: integer
+        related_client_name:
+          type: string
+        representative_id:
+          type: integer
+        representative_name:
+          type: string
+        resale_number:
+          type: string
+        room_list_id:
+          type: integer
+        room_list_name:
+          type: string
+        sales_tax_deposit_percent:
+          type: string
+        selling_deposit_percent:
+          type: string
+        selling_discount:
+          type: integer
+        selling_mark_up_percent:
+          type: string
+        staging_extension_percent:
+          type: string
+        stripe_ach_payments_enabled:
+          type: boolean
+        stripe_credit_card_payments_enabled:
+          type: boolean
+        tax_location_id:
+          type: integer
+        tax_location_name:
+          type: string
+        type_id:
+          type: integer
+        type_name:
+          type: string
+        use_client_address:
+          type: boolean
+        website_url:
+          type: string
+    GetClientsResponse:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/components/schemas/Client'
+        total:
+          type: integer
+    GetHomeResponse:
+      type: object
+      properties:
+        account_link_company_address:
+          type: string
+        account_link_company_address_2:
+          type: string
+        account_link_company_city:
+          type: string
+        account_link_company_postal_code:
+          type: string
+        account_link_company_state:
+          type: string
+        account_link_website:
+          type: string
+        account_name:
+          type: string
+        email:
+          type: string
+        mobilephone:
+          type: string
+        name:
+          type: string
+        phone:
+          type: string
+        title:
+          type: string
+    GetSwtrainingFreetrainingsResponse:
+      type: array
+    Activity:
+      type: object
+      additionalProperties: true
+    GetActivitiesResponse:
+      type: object
+      properties:
+        List:
+          type: array
+          items:
+            $ref: '#/components/schemas/Activity'
+        TotalFound:
+          type: integer
+        TotalQuantity:
+          type: string
+    Employee:
+      type: object
+      properties:
+        active:
+          type: boolean
+        administrator:
+          type: boolean
+        createddate:
+          type: integer
+        email:
+          type: string
+        email_signature:
+          type: string
+        group_c:
+          type: integer
+        id:
+          type: integer
+        name:
+          type: string
+        swuser_lookup_is_active:
+          type: boolean
+        swuser_lookup_name:
+          type: string
+    GetEmployeesResponse:
+      type: object
+      properties:
+        List:
+          type: array
+          items:
+            $ref: '#/components/schemas/Employee'
+        TotalFound:
+          type: integer
+    Order:
+      type: object
+      properties:
+        acknowledged_date:
+          type: integer
+        active:
+          type: boolean
+        client:
+          type: integer
+        client_name:
+          type: string
+        emailed_date:
+          type: integer
+        id:
+          type: integer
+        linked_vendor_id:
+          type: integer
+        name:
+          type: string
+        order_date:
+          type: integer
+        purchase_deposit:
+          type: string
+        ship_to:
+          type: integer
+        total_purchase:
+          type: string
+        vendor:
+          type: integer
+        vendor_name:
+          type: string
+        vendor_payments:
+          type: string
+        vendor_total_balance:
+          type: string
+    GetOrdersResponse:
+      type: object
+      properties:
+        List:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+        TotalFound:
+          type: integer
+    Notification:
+      type: object
+      additionalProperties: true
+    GetActivitiesNotificationsResponse:
+      type: object
+      properties:
+        List:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+        TotalFound:
+          type: integer
+security:
+  - Session:
+      - Session
