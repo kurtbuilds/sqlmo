@@ -1,6 +1,6 @@
 [package]
 name = "sqldiff"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 description = "primitives to auto-generate SQL schema migrations"
 license = "MIT"
