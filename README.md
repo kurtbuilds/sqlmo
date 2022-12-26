@@ -32,7 +32,7 @@ auto-generate migrations.
 
 Current tools that support this:
 
-- (`sqldiff`)[https://github.com/kurtbuilds/sqldiff]
+- [`sqldiff`](https://github.com/kurtbuilds/sqldiff)
 
 If you use `sqldiff`, submit a PR to be added to this list.
 
