@@ -8,10 +8,5 @@
 mod schema;
 mod migrate;
 
-use std::collections::{HashMap, HashSet};
-use anyhow::{Error, Result};
-use schema::{Table, Column, SchemaColumn};
-use itertools::Itertools;
-use sqlx::PgConnection;
-use migrate::Migration;
-pub use schema::Schema;
+pub use migrate::*;
+pub use schema::*;

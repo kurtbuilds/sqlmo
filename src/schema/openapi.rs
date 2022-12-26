@@ -1,7 +1,6 @@
-use openapiv3::{OpenAPI, SchemaKind};
+use openapiv3::{OpenAPI, SchemaKind, Schema as OaSchema, Type as OaType};
 use convert_case::{Case, Casing};
 use crate::schema::{Column, Table, Type};
-use crate::migrate::{Migration, transform};
 use crate::Schema;
 
 impl TryFrom<OpenAPI> for Schema {
@@ -30,25 +29,25 @@ impl TryFrom<OpenAPI> for Schema {
     }
 }
 
-fn schema_to_type(schema: &oa::Schema, spec:&OpenAPI) -> anyhow::Result<Type> {
+fn schema_to_type(schema: &OaSchema, spec:&OpenAPI) -> anyhow::Result<Type> {
     match schema.schema_kind {
-        SchemaKind::Type(oa::Type::String(_)) => {
+        SchemaKind::Type(OaType::String(_)) => {
             Ok(Type::Text)
         }
-        SchemaKind::Type(oa::Type::Integer(_)) => {
+        SchemaKind::Type(OaType::Integer(_)) => {
             Ok(Type::Integer)
         }
-        SchemaKind::Type(oa::Type::Boolean{..}) => {
+        SchemaKind::Type(OaType::Boolean{..}) => {
             Ok(Type::Boolean)
         }
-        SchemaKind::Type(oa::Type::Number(_)) => {
+        SchemaKind::Type(OaType::Number(_)) => {
             Ok(Type::Numeric)
         }
         _ => panic!("Unsupported type: {:?}", schema)
     }
 }
 
-fn schema_to_columns(schema: &oa::Schema, spec: &OpenAPI) -> anyhow::Result<Vec<Column>> {
+fn schema_to_columns(schema: &OaSchema, spec: &OpenAPI) -> anyhow::Result<Vec<Column>> {
     let mut columns = vec![];
     let props = schema.properties().ok_or(anyhow::anyhow!("No properties"))?;
     for (name, prop) in props.into_iter() {
