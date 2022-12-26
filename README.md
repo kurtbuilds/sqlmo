@@ -32,9 +32,9 @@ auto-generate migrations.
 
 Current tools that support this:
 
-- [`sqldiff`](https://github.com/kurtbuilds/sqldiff)
+- [`ormlite`](https://github.com/kurtbuilds/ormlite)
 
-If you use `sqldiff`, submit a PR to be added to this list.
+If you use this library, submit a PR to be added to this list.
 
 ```rust
 #[tokio::main]
