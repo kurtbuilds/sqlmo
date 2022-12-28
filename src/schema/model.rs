@@ -35,6 +35,8 @@ pub enum Type {
     // date types
     Date,
     DateTime,
+    NaiveDateTime,
+    Duration,
     // json types
     Json,
     Jsonb,
@@ -52,7 +54,8 @@ impl Type {
             "date" => Ok(Type::Date),
             "bytea" => Ok(Type::Bytes),
             "timestamp with time zone" => Ok(Type::DateTime),
-            "datetime" => Ok(Type::DateTime),
+            "timestamp without time zone" => Ok(Type::NaiveDateTime),
+            "interval" => Ok(Type::Duration),
             "json" => Ok(Type::Json),
             "jsonb" => Ok(Type::Jsonb),
             "numeric" => Ok(Type::Numeric),
@@ -70,6 +73,7 @@ impl Type {
 pub struct Column {
     pub name: String,
     pub typ: Type,
+    // nullable
     pub null: bool,
     pub default: Option<String>,
 }
@@ -86,19 +90,22 @@ pub trait ToSql {
 
 impl ToSql for Type {
     fn to_sql(&self) -> String {
+        use self::Type::*;
         match self {
-            Type::BigInt => "bigint".to_string(),
-            Type::Boolean => "boolean".to_string(),
-            Type::Bytes => "bytea".to_string(),
-            Type::Date => "date".to_string(),
-            Type::DateTime => "timestamptz".to_string(),
-            Type::Json => "json".to_string(),
-            Type::Jsonb => "jsonb".to_string(),
-            Type::Numeric => "numeric".to_string(),
-            Type::SmallInt => "smallint".to_string(),
-            Type::Uuid => "uuid".to_string(),
-            Type::Integer => "integer".to_string(),
-            Type::Text => "character varying".to_string(),
+            BigInt => "bigint".to_string(),
+            Boolean => "boolean".to_string(),
+            Bytes => "bytea".to_string(),
+            Date => "date".to_string(),
+            DateTime => "timestamptz".to_string(),
+            NaiveDateTime => "timestamp without time zone".to_string(),
+            Duration => "interval".to_string(),
+            Json => "json".to_string(),
+            Jsonb => "jsonb".to_string(),
+            Numeric => "numeric".to_string(),
+            SmallInt => "smallint".to_string(),
+            Uuid => "uuid".to_string(),
+            Integer => "integer".to_string(),
+            Text => "character varying".to_string(),
         }
     }
 }
