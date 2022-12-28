@@ -73,8 +73,8 @@ impl Type {
 pub struct Column {
     pub name: String,
     pub typ: Type,
-    // nullable
-    pub null: bool,
+    pub nullable: bool,
+    pub primary_key: bool,
     pub default: Option<String>,
 }
 

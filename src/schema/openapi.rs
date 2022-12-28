@@ -53,9 +53,10 @@ fn schema_to_columns(schema: &OaSchema, spec: &OpenAPI) -> anyhow::Result<Vec<Co
     for (name, prop) in props.into_iter() {
         let prop = prop.resolve(spec);
         let column = Column {
+            primary_key: false,
             name: name.to_case(Case::Snake),
             typ: schema_to_type(prop, spec)?,
-            null: prop.required(&name),
+            nullable: prop.required(&name),
             default: None,
         };
         columns.push(column);

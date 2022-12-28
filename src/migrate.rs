@@ -4,8 +4,6 @@ use std::ops::Sub;
 use anyhow::Result;
 
 pub use model::*;
-
-use crate::migrate::model::{AlterAction, AlterTable, CreateTable, Statement};
 use crate::schema::{Column, Schema, Table, Type};
 
 mod model;

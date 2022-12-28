@@ -5,13 +5,15 @@ use crate::schema::ToSql;
 /// Create table action
 #[derive(Debug)]
 pub struct CreateTable {
-    name: String,
-    columns: Vec<Column>,
+    pub name: String,
+    pub columns: Vec<Column>,
 }
 
 /// Create index action for a table
 #[derive(Debug)]
 pub struct CreateIndex {
+    pub name: String,
+    pub table_name: String,
 }
 
 
@@ -25,8 +27,8 @@ pub enum AlterAction {
 
 #[derive(Debug)]
 pub struct AlterTable {
-    pub(crate) name: String,
-    pub(crate) alter_action: AlterAction,
+    pub name: String,
+    pub alter_action: AlterAction,
 }
 
 
@@ -48,8 +50,11 @@ impl ToSql for Column {
         sql.push_str(&self.name);
         sql.push(' ');
         sql.push_str(&self.typ.to_sql());
-        if !self.null {
+        if !self.nullable {
             sql.push_str(" NOT NULL");
+        }
+        if self.primary_key {
+            sql.push_str(" PRIMARY KEY");
         }
         sql
     }

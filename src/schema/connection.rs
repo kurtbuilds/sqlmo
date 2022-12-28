@@ -54,18 +54,19 @@ pub async fn query_table_names(mut conn: &mut PgConnection, schema_name: &str) -
 
 impl Schema {
     pub async fn try_from_database(conn: &mut PgConnection, schema_name: &str) -> Result<Schema> {
-        let column_schemas = schema::query_schema_columns(conn, schema_name).await?;
+        let column_schemas = query_schema_columns(conn, schema_name).await?;
         let mut tables = column_schemas.into_iter()
             .group_by(|c| c.table_name.clone())
             .into_iter()
             .map(|(table_name, group)| {
                 let columns = group.map(|c: SchemaColumn| {
-                    let null = c.is_nullable == "YES";
+                    let nullable = c.is_nullable == "YES";
                     let typ = schema::Type::from_str(&c.data_type)?;
                     Ok(Column {
                         name: c.column_name.clone(),
                         typ,
-                        null,
+                        nullable,
+                        primary_key: false,
                         default: None,
                     })
                 }).collect::<Result<Vec<_>, Error>>()?;
@@ -74,7 +75,7 @@ impl Schema {
             .collect::<Result<Vec<_>, Error>>()?;
 
         // Degenerate case but you can have tables with no columns...
-        let table_names = schema::query_table_names(conn, schema_name).await?;
+        let table_names = query_table_names(conn, schema_name).await?;
         for name in table_names {
             if tables.iter().any(|t| t.name == name) {
                 continue;
