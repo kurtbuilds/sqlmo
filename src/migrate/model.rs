@@ -40,8 +40,14 @@ pub enum Statement {
 }
 
 #[derive(Debug)]
+pub enum DebugResults {
+    TablesIdentical(String)
+}
+
+#[derive(Debug)]
 pub struct Migration {
-    pub statements: Vec<Statement>
+    pub statements: Vec<Statement>,
+    pub debug_results: Vec<DebugResults>,
 }
 
 impl ToSql for Column {
