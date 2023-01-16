@@ -11,17 +11,16 @@ impl TryFrom<OpenAPI> for Schema {
     fn try_from(spec: OpenAPI) -> Result<Self, Self::Error> {
         let mut tables = Vec::new();
         if let Some(components) = &spec.components {
-            for (schema_name, schema) in components.schemas.iter().filter(|(schema_name, schema)| {
+            for (schema_name, schema) in components.schemas.iter().filter(|(schema_name, _)| {
                 !schema_name.ends_with("Response")
             }) {
                 let schema = schema.resolve(&spec);
                 let columns = schema_to_columns(&schema, &spec)?;
-                let name = schema_name.to_case(Case::Snake);
                 let table = Table {
                     schema: None,
                     name: schema_name.to_case(Case::Snake),
                     columns,
-                    indexes: vec![]
+                    indexes: vec![],
                 };
                 tables.push(table);
             }
@@ -32,7 +31,7 @@ impl TryFrom<OpenAPI> for Schema {
     }
 }
 
-fn oaschema_to_sqltype(schema: &OaSchema, spec:&OpenAPI) -> anyhow::Result<Type> {
+fn oaschema_to_sqltype(schema: &OaSchema, _: &OpenAPI) -> anyhow::Result<Type> {
     use Type::*;
     let s = match schema.schema_kind {
         SchemaKind::Type(OaType::String(_)) => {
@@ -41,7 +40,7 @@ fn oaschema_to_sqltype(schema: &OaSchema, spec:&OpenAPI) -> anyhow::Result<Type>
         SchemaKind::Type(OaType::Integer(_)) => {
             Integer
         }
-        SchemaKind::Type(OaType::Boolean{..}) => {
+        SchemaKind::Type(OaType::Boolean { .. }) => {
             Boolean
         }
         SchemaKind::Type(OaType::Number(_)) => {
