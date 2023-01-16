@@ -11,17 +11,15 @@ pub struct Column {
 
 
 impl ToSql for Column {
-    fn to_sql(&self, dialect: Dialect) -> String {
-        let mut sql = String::new();
-        sql.push_str(&self.name);
-        sql.push(' ');
-        sql.push_str(&self.typ.to_sql(dialect));
+    fn write_sql(&self, buf: &mut String, dialect: Dialect) {
+        buf.push_str(&self.name);
+        buf.push(' ');
+        buf.push_str(&self.typ.to_sql(dialect));
         if !self.nullable {
-            sql.push_str(" NOT NULL");
+            buf.push_str(" NOT NULL");
         }
         if self.primary_key {
-            sql.push_str(" PRIMARY KEY");
+            buf.push_str(" PRIMARY KEY");
         }
-        sql
     }
 }

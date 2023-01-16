@@ -71,12 +71,12 @@ pub enum Statement {
 }
 
 impl ToSql for Statement {
-    fn to_sql(&self, dialect: Dialect) -> String {
+    fn write_sql(&self, buf: &mut String, dialect: Dialect) {
         use Statement::*;
         match self {
-            CreateTable(c) => c.to_sql(dialect),
-            CreateIndex(c) => c.to_sql(dialect),
-            AlterTable(a) => a.to_sql(dialect),
+            CreateTable(c) => c.write_sql(buf, dialect),
+            CreateIndex(c) => c.write_sql(buf, dialect),
+            AlterTable(a) => a.write_sql(buf, dialect),
         }
     }
 }

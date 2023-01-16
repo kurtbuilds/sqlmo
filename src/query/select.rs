@@ -1,6 +1,5 @@
 use crate::{Dialect, ToSql};
-
-use crate::util::{column_name, push_sql_sequence, quote};
+use crate::util::SqlExtension;
 
 /// Common table expression
 #[derive(Debug, Clone)]
@@ -10,13 +9,11 @@ pub struct Cte {
 }
 
 impl ToSql for Cte {
-    fn to_sql(&self, dialect: Dialect) -> String {
-        let mut sql = String::new();
-        sql.push_str(&self.name);
-        sql.push_str(" AS (");
-        sql.push_str(&self.query.to_sql(dialect));
-        sql.push(')');
-        sql
+    fn write_sql(&self, buf: &mut String, dialect: Dialect) {
+        buf.push_str(&self.name);
+        buf.push_str(" AS (");
+        buf.push_str(&self.query.to_sql(dialect));
+        buf.push(')');
     }
 }
 
@@ -36,22 +33,28 @@ pub struct SelectColumn {
 }
 
 impl ToSql for SelectColumn {
-    fn to_sql(&self, _dialect: Dialect) -> String {
+    fn write_sql(&self, buf: &mut String, _: Dialect) {
         use SelectExpression::*;
-        let mut sql = String::new();
         match &self.expression {
             Column { schema, table, column } => {
-                sql.push_str(&column_name(schema.as_ref(), table.as_ref(), column, None));
+                if let Some(schema) = schema {
+                    buf.push_quoted(schema);
+                    buf.push('.');
+                }
+                if let Some(table) = table {
+                    buf.push_quoted(table);
+                    buf.push('.');
+                }
+                buf.push_quoted(column);
             }
             Literal(literal) => {
-                sql.push_str(literal);
+                buf.push_str(literal);
             }
         }
         if let Some(alias) = &self.alias {
-            sql.push_str(" AS ");
-            sql.push_str(&quote(alias));
+            buf.push_str(" AS ");
+            buf.push_quoted(alias);
         }
-        sql
     }
 }
 
@@ -64,8 +67,8 @@ pub struct From {
 }
 
 impl ToSql for From {
-    fn to_sql(&self, _dialect: Dialect) -> String {
-        crate::util::table_name(self.schema.as_ref(), &self.table, self.alias.as_ref())
+    fn write_sql(&self, buf: &mut String, _: Dialect) {
+        buf.push_table_name(&self.schema, &self.table, self.alias.as_ref());
     }
 }
 
@@ -78,31 +81,29 @@ pub enum Where {
 
 impl Where {
     pub fn is_empty(&self) -> bool {
+        use Where::*;
         match self {
-            Where::And(v) => v.is_empty(),
-            Where::Or(v) => v.is_empty(),
-            Where::Literal(s) => s.is_empty(),
+            And(v) => v.is_empty(),
+            Or(v) => v.is_empty(),
+            Literal(s) => s.is_empty(),
         }
     }
 }
 
-
 impl ToSql for Where {
-    fn to_sql(&self, dialect: Dialect) -> String {
+    fn write_sql(&self, buf: &mut String, dialect: Dialect) {
         match self {
             Where::And(v) => {
-                let mut sql = String::new();
-                push_sql_sequence(&mut sql, v, " AND ", dialect);
-                sql
+                buf.push_sql_sequence(v, " AND ", dialect);
             }
             Where::Or(v) => {
-                let mut sql = String::new();
-                sql.push('(');
-                push_sql_sequence(&mut sql, v, " OR ", dialect);
-                sql.push(')');
-                sql
+                buf.push('(');
+                buf.push_sql_sequence(v, " OR ", dialect);
+                buf.push(')');
             }
-            Where::Literal(s) => s.clone(),
+            Where::Literal(s) => {
+                buf.push_str(s);
+            }
         }
     }
 }
@@ -131,31 +132,31 @@ pub struct Join {
 
 
 impl ToSql for Join {
-    fn to_sql(&self, dialect: Dialect) -> String {
-        let mut sql = String::new();
+    fn write_sql(&self, buf: &mut String, dialect: Dialect) {
+        use JoinType::*;
+        use JoinTable::*;
         match self.typ {
-            JoinType::Inner => sql.push_str("INNER JOIN "),
-            JoinType::Left => sql.push_str("LEFT JOIN "),
-            JoinType::Right => sql.push_str("RIGHT JOIN "),
-            JoinType::Full => sql.push_str("FULL JOIN "),
+            Inner => buf.push_str("INNER JOIN "),
+            Left => buf.push_str("LEFT JOIN "),
+            Right => buf.push_str("RIGHT JOIN "),
+            Full => buf.push_str("FULL JOIN "),
         }
         match &self.table {
-            JoinTable::Select(s) => {
-                sql.push('(');
-                sql.push_str(&s.to_sql(dialect));
-                sql.push(')');
+            Select(s) => {
+                buf.push('(');
+                buf.push_str(&s.to_sql(dialect));
+                buf.push(')');
             }
-            JoinTable::Table(f) => {
-                sql.push_str(&f.to_sql(dialect));
+            Table(f) => {
+                buf.push_str(&f.to_sql(dialect));
             }
         }
         if let Some(alias) = &self.alias {
-            sql.push_str(" AS ");
-            sql.push_str(alias);
+            buf.push_str(" AS ");
+            buf.push_str(alias);
         }
-        sql.push_str(" ON ");
-        sql.push_str(&self.on.to_sql(dialect));
-        sql
+        buf.push_str(" ON ");
+        buf.push_str(&self.on.to_sql(dialect));
     }
 }
 
@@ -173,15 +174,13 @@ pub struct OrderBy {
 }
 
 impl ToSql for OrderBy {
-    fn to_sql(&self, _dialect: Dialect) -> String {
+    fn write_sql(&self, buf: &mut String, _: Dialect) {
         use Direction::*;
-        let mut sql = String::new();
-        sql.push_str(&self.column);
+        buf.push_str(&self.column);
         match self.direction {
-            Asc => sql.push_str(" ASC"),
-            Desc => sql.push_str(" DESC"),
+            Asc => buf.push_str(" ASC"),
+            Desc => buf.push_str(" DESC"),
         }
-        sql
     }
 }
 
@@ -200,8 +199,8 @@ impl OrderBy {
 pub struct GroupBy(String);
 
 impl ToSql for GroupBy {
-    fn to_sql(&self, _dialect: Dialect) -> String {
-        self.0.clone()
+    fn write_sql(&self, buf: &mut String, _: Dialect) {
+        buf.push_str(&self.0)
     }
 }
 
@@ -310,50 +309,48 @@ impl Select {
 }
 
 impl ToSql for Select {
-    fn to_sql(&self, dialect: Dialect) -> String {
-        let mut sql = String::new();
+    fn write_sql(&self, buf: &mut String, dialect: Dialect) {
         if !self.ctes.is_empty() {
-            sql.push_str("WITH ");
-            push_sql_sequence(&mut sql, &self.ctes, ", ", dialect);
-            sql.push(' ');
+            buf.push_str("WITH ");
+            buf.push_sql_sequence(&self.ctes, ", ", dialect);
+            buf.push(' ');
         }
-        sql.push_str("SELECT ");
+        buf.push_str("SELECT ");
         if self.distinct {
-            sql.push_str("DISTINCT ");
+            buf.push_str("DISTINCT ");
         }
-        push_sql_sequence(&mut sql, &self.columns, ", ", dialect);
+        buf.push_sql_sequence(&self.columns, ", ", dialect);
         if let Some(from) = &self.from {
-            sql.push_str(" FROM ");
-            sql.push_str(&from.to_sql(dialect));
-            sql.push(' ');
+            buf.push_str(" FROM ");
+            buf.push_str(&from.to_sql(dialect));
+            buf.push(' ');
         }
         if !self.join.is_empty() {
-            push_sql_sequence(&mut sql, &self.join, " ", dialect);
+            buf.push_sql_sequence(&self.join, " ", dialect);
         }
         if !self.where_.is_empty() {
-            sql.push_str(" WHERE ");
-            sql.push_str(&self.where_.to_sql(dialect));
+            buf.push_str(" WHERE ");
+            buf.push_str(&self.where_.to_sql(dialect));
         }
         if !self.group.is_empty() {
-            sql.push_str(" GROUP BY ");
-            push_sql_sequence(&mut sql, &self.group, ", ", dialect);
+            buf.push_str(" GROUP BY ");
+            buf.push_sql_sequence(&self.group, ", ", dialect);
         }
         if !self.having.is_empty() {
-            sql.push_str(" HAVING ");
-            sql.push_str(&self.having.to_sql(dialect));
+            buf.push_str(" HAVING ");
+            buf.push_str(&self.having.to_sql(dialect));
         }
         if !self.order.is_empty() {
-            sql.push_str(" ORDER BY ");
-            push_sql_sequence(&mut sql, &self.order, ", ", dialect);
+            buf.push_str(" ORDER BY ");
+            buf.push_sql_sequence(&self.order, ", ", dialect);
         }
         if let Some(limit) = self.limit {
-            sql.push_str(" LIMIT ");
-            sql.push_str(&limit.to_string());
+            buf.push_str(" LIMIT ");
+            buf.push_str(&limit.to_string());
         }
         if let Some(offset) = self.offset {
-            sql.push_str(" OFFSET ");
-            sql.push_str(&offset.to_string());
+            buf.push_str(" OFFSET ");
+            buf.push_str(&offset.to_string());
         }
-        sql
     }
 }

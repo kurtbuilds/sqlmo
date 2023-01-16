@@ -1,5 +1,5 @@
 use crate::{Dialect, Column, ToSql};
-use crate::util::table_name;
+use crate::util::SqlExtension;
 
 /// Alter table action
 #[derive(Debug)]
@@ -17,17 +17,15 @@ pub struct AlterTable {
 }
 
 impl ToSql for AlterTable {
-    fn to_sql(&self, dialect: Dialect) -> String {
+    fn write_sql(&self, buf: &mut String, dialect: Dialect) {
         use AlterAction::*;
-        let mut sql = String::new();
-        sql.push_str("ALTER TABLE ");
-        sql.push_str(&table_name(self.schema.as_ref(), &self.name, None));
+        buf.push_str("ALTER TABLE ");
+        buf.push_table_name(&self.schema, &self.name, None);
         match &self.action {
             AddColumn { column } => {
-                sql.push_str(" ADD COLUMN ");
-                sql.push_str(&column.to_sql(dialect));
+                buf.push_str(" ADD COLUMN ");
+                buf.push_str(&column.to_sql(dialect));
             }
         }
-        sql
     }
 }

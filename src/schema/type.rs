@@ -52,23 +52,24 @@ impl Type {
 }
 
 impl ToSql for Type {
-    fn to_sql(&self, _dialect: Dialect) -> String {
+    fn write_sql(&self, buf: &mut String, _: Dialect) {
         use self::Type::*;
-        match self {
-            BigInt => "bigint".to_string(),
-            Boolean => "boolean".to_string(),
-            Bytes => "bytea".to_string(),
-            Date => "date".to_string(),
-            DateTime => "timestamptz".to_string(),
-            NaiveDateTime => "timestamp without time zone".to_string(),
-            Duration => "interval".to_string(),
-            Json => "json".to_string(),
-            Jsonb => "jsonb".to_string(),
-            Numeric => "numeric".to_string(),
-            SmallInt => "smallint".to_string(),
-            Uuid => "uuid".to_string(),
-            Integer => "integer".to_string(),
-            Text => "character varying".to_string(),
-        }
+        let s = match self {
+            BigInt => "bigint",
+            Boolean => "boolean",
+            Bytes => "bytea",
+            Date => "date",
+            DateTime => "timestamptz",
+            NaiveDateTime => "timestamp without time zone",
+            Duration => "interval",
+            Json => "json",
+            Jsonb => "jsonb",
+            Numeric => "numeric",
+            SmallInt => "smallint",
+            Uuid => "uuid",
+            Integer => "integer",
+            Text => "character varying",
+        };
+        buf.push_str(s);
     }
 }

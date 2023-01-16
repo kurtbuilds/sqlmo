@@ -1,5 +1,5 @@
 use crate::{Dialect, Table, Column, ToSql};
-use crate::util::table_name;
+use crate::util::SqlExtension;
 
 /// Create table action
 #[derive(Debug)]
@@ -21,20 +21,11 @@ impl CreateTable {
 }
 
 impl ToSql for CreateTable {
-    fn to_sql(&self, dialect: Dialect) -> String {
-        let mut sql = String::new();
-        sql.push_str("CREATE TABLE ");
-        sql.push_str(&table_name(self.schema.as_ref(), &self.name, None));
-        sql.push_str(" (\n");
-        let mut first = true;
-        for column in &self.columns {
-            if !first {
-                sql.push_str("\n, ");
-            }
-            sql.push_str(&column.to_sql(dialect));
-            first = false;
-        }
-        sql.push_str("\n)");
-        sql
+    fn write_sql(&self, buf: &mut String, dialect: Dialect) {
+        buf.push_str("CREATE TABLE ");
+        buf.push_table_name(&self.schema, &self.name, None);
+        buf.push_str(" (\n");
+        buf.push_sql_sequence(&self.columns, ",\n", dialect);
+        buf.push_str("\n)");
     }
 }
