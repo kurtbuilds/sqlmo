@@ -1,6 +1,6 @@
 [package]
 name = "sqlmo"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 description = "SQL data primitives. Use it to generate queries, model tables, calculate table diffs and therefore generate migrations, and more."
 license = "MIT"
