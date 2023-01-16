@@ -16,12 +16,83 @@ pub enum JoinType {
     Full,
 }
 
+impl Default for JoinType {
+    fn default() -> Self {
+        JoinType::Inner
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Criteria {
+    On(Where),
+    Using(Vec<String>),
+}
+
+impl ToSql for Criteria {
+    fn write_sql(&self, buf: &mut String, dialect: Dialect) {
+        match self {
+            Criteria::On(where_) => {
+                buf.push_str(" ON ");
+                buf.push_sql(where_, dialect);
+            }
+            Criteria::Using(columns) => {
+                buf.push_str(" USING (");
+                let mut first = true;
+                for column in columns {
+                    if !first {
+                        buf.push_str(", ");
+                    }
+                    buf.push_quoted(column);
+                    first = false;
+                }
+                buf.push(')');
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Join {
     pub typ: JoinType,
     pub table: JoinTable,
     pub alias: Option<String>,
-    pub on: Where,
+    pub criteria: Criteria,
+}
+
+impl Join {
+    pub fn new(table: &str) -> Self {
+        Self {
+            typ: JoinType::Inner,
+            table: JoinTable::Table {
+                schema: None,
+                table: table.to_string(),
+            },
+            alias: None,
+            criteria: Criteria::On(Where::And(vec![])),
+        }
+    }
+
+    pub fn left(table: &str) -> Self {
+        Self {
+            typ: JoinType::Left,
+            table: JoinTable::Table {
+                schema: None,
+                table: table.to_string(),
+            },
+            alias: None,
+            criteria: Criteria::On(Where::And(vec![])),
+        }
+    }
+
+    pub fn alias(mut self, alias: &str) -> Self {
+        self.alias = Some(alias.to_string());
+        self
+    }
+
+    pub fn on_raw(mut self, on: impl Into<String>) -> Self {
+        self.criteria = Criteria::On(Where::Raw(on.into()));
+        self
+    }
 }
 
 
@@ -30,7 +101,7 @@ impl ToSql for Join {
         use JoinType::*;
         use JoinTable::*;
         match self.typ {
-            Inner => buf.push_str("INNER JOIN "),
+            Inner => buf.push_str("JOIN "),
             Left => buf.push_str("LEFT JOIN "),
             Right => buf.push_str("RIGHT JOIN "),
             Full => buf.push_str("FULL JOIN "),
@@ -49,7 +120,38 @@ impl ToSql for Join {
             buf.push_str(" AS ");
             buf.push_str(alias);
         }
-        buf.push_str(" ON ");
-        buf.push_str(&self.on.to_sql(dialect));
+        buf.push_sql(&self.criteria, dialect);
     }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_basic() {
+        let j = Join {
+            typ: JoinType::Inner,
+            table: JoinTable::Table { schema: None, table: "foo".to_string() },
+            alias: Some("bar".to_string()),
+            criteria: Criteria::On(Where::Raw("bar.id = parent.bar_id".to_string())),
+        };
+        assert_eq!(
+            j.to_sql(Dialect::Postgres),
+            r#"JOIN "foo" AS bar ON bar.id = parent.bar_id"#
+        );
+    }
+
+    #[test]
+    fn test_builder() {
+        let j = Join::new("table")
+            .alias("bar")
+            .on_raw("bar.id = parent.bar_id");
+        assert_eq!(
+            j.to_sql(Dialect::Postgres),
+            r#"JOIN "table" AS bar ON bar.id = parent.bar_id"#
+        );
+    }
+
 }

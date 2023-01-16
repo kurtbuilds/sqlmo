@@ -149,6 +149,42 @@ pub struct SelectColumn {
     pub alias: Option<String>,
 }
 
+impl SelectColumn {
+    pub fn new(column: &str) -> Self {
+        Self {
+            expression: SelectExpression::Column {
+                schema: None,
+                table: None,
+                column: column.to_string(),
+            },
+            alias: None,
+        }
+    }
+
+    pub fn table_column(table: &str, column: &str) -> Self {
+        Self {
+            expression: SelectExpression::Column {
+                schema: None,
+                table: Some(table.to_string()),
+                column: column.to_string(),
+            },
+            alias: None,
+        }
+    }
+
+    pub fn raw(expression: &str) -> Self {
+        Self {
+            expression: SelectExpression::Raw(expression.to_string()),
+            alias: None,
+        }
+    }
+
+    pub fn alias(mut self, alias: impl Into<String>) -> Self {
+        self.alias = Some(alias.into());
+        self
+    }
+}
+
 impl ToSql for SelectColumn {
     fn write_sql(&self, buf: &mut String, _: Dialect) {
         use SelectExpression::*;
