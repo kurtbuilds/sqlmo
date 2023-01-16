@@ -20,7 +20,7 @@ impl ToSql for AlterTable {
     fn write_sql(&self, buf: &mut String, dialect: Dialect) {
         use AlterAction::*;
         buf.push_str("ALTER TABLE ");
-        buf.push_table_name(&self.schema, &self.name, None);
+        buf.push_table_name(&self.schema, &self.name);
         match &self.action {
             AddColumn { column } => {
                 buf.push_str(" ADD COLUMN ");

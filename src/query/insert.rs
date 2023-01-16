@@ -111,7 +111,7 @@ impl ToSql for Insert {
         } else {
             buf.push_str("INSERT INTO ");
         }
-        buf.push_table_name(&self.schema, &self.table, None);
+        buf.push_table_name(&self.schema, &self.table);
         buf.push_str(" (");
         let mut first = true;
         for c in &self.columns {

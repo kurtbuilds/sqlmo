@@ -1,219 +1,12 @@
+use cte::{Cte, CteQuery};
 use crate::{Dialect, ToSql};
 use crate::util::SqlExtension;
 
-#[derive(Debug, Clone)]
-pub enum CteQuery {
-    Select(Select),
-    Raw(String),
-}
+mod cte;
+mod join;
 
-impl ToSql for CteQuery {
-    fn write_sql(&self, buf: &mut String, dialect: Dialect) {
-        match self {
-            CteQuery::Select(s) => s.write_sql(buf, dialect),
-            CteQuery::Raw(s) => buf.push_str(s),
-        }
-    }
-}
-
-/// Common table expression
-#[derive(Debug, Clone)]
-pub struct Cte {
-    pub name: String,
-    pub query: CteQuery,
-}
-
-impl ToSql for Cte {
-    fn write_sql(&self, buf: &mut String, dialect: Dialect) {
-        buf.push_str(&self.name);
-        buf.push_str(" AS (");
-        buf.push_str(&self.query.to_sql(dialect));
-        buf.push(')');
-    }
-}
-
-/// Represents a select column value.
-#[derive(Debug, Clone)]
-pub enum SelectExpression {
-    Column { schema: Option<String>, table: Option<String>, column: String },
-    Raw(String),
-}
-
-
-/// Represents a column of a SELECT statement.
-#[derive(Debug, Clone)]
-pub struct SelectColumn {
-    pub expression: SelectExpression,
-    pub alias: Option<String>,
-}
-
-impl ToSql for SelectColumn {
-    fn write_sql(&self, buf: &mut String, _: Dialect) {
-        use SelectExpression::*;
-        match &self.expression {
-            Column { schema, table, column } => {
-                if let Some(schema) = schema {
-                    buf.push_quoted(schema);
-                    buf.push('.');
-                }
-                if let Some(table) = table {
-                    buf.push_quoted(table);
-                    buf.push('.');
-                }
-                buf.push_quoted(column);
-            }
-            Raw(raw) => {
-                buf.push_str(raw);
-            }
-        }
-        if let Some(alias) = &self.alias {
-            buf.push_str(" AS ");
-            buf.push_quoted(alias);
-        }
-    }
-}
-
-
-#[derive(Debug, Clone)]
-pub struct From {
-    pub schema: Option<String>,
-    pub table: String,
-    pub alias: Option<String>,
-}
-
-impl ToSql for From {
-    fn write_sql(&self, buf: &mut String, _: Dialect) {
-        buf.push_table_name(&self.schema, &self.table, self.alias.as_ref());
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum Where {
-    And(Vec<Where>),
-    Or(Vec<Where>),
-    Raw(String),
-}
-
-impl Where {
-    pub fn is_empty(&self) -> bool {
-        use Where::*;
-        match self {
-            And(v) => v.is_empty(),
-            Or(v) => v.is_empty(),
-            Raw(s) => s.is_empty(),
-        }
-    }
-}
-
-impl ToSql for Where {
-    fn write_sql(&self, buf: &mut String, dialect: Dialect) {
-        match self {
-            Where::And(v) => {
-                buf.push_sql_sequence(v, " AND ", dialect);
-            }
-            Where::Or(v) => {
-                buf.push('(');
-                buf.push_sql_sequence(v, " OR ", dialect);
-                buf.push(')');
-            }
-            Where::Raw(s) => {
-                buf.push_str(s);
-            }
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum JoinTable {
-    Select(Select),
-    Table(From),
-}
-
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum JoinType {
-    Inner,
-    Left,
-    Right,
-    Full,
-}
-
-#[derive(Debug, Clone)]
-pub struct Join {
-    pub typ: JoinType,
-    pub table: JoinTable,
-    pub alias: Option<String>,
-    pub on: Where,
-}
-
-
-impl ToSql for Join {
-    fn write_sql(&self, buf: &mut String, dialect: Dialect) {
-        use JoinType::*;
-        use JoinTable::*;
-        match self.typ {
-            Inner => buf.push_str("INNER JOIN "),
-            Left => buf.push_str("LEFT JOIN "),
-            Right => buf.push_str("RIGHT JOIN "),
-            Full => buf.push_str("FULL JOIN "),
-        }
-        match &self.table {
-            Select(s) => {
-                buf.push('(');
-                buf.push_str(&s.to_sql(dialect));
-                buf.push(')');
-            }
-            Table(f) => {
-                buf.push_str(&f.to_sql(dialect));
-            }
-        }
-        if let Some(alias) = &self.alias {
-            buf.push_str(" AS ");
-            buf.push_str(alias);
-        }
-        buf.push_str(" ON ");
-        buf.push_str(&self.on.to_sql(dialect));
-    }
-}
-
-/// The direction of a column in an ORDER BY clause.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Direction {
-    Asc,
-    Desc,
-}
-
-#[derive(Debug, Clone)]
-pub struct OrderBy {
-    pub column: String,
-    pub direction: Direction,
-}
-
-impl ToSql for OrderBy {
-    fn write_sql(&self, buf: &mut String, _: Dialect) {
-        use Direction::*;
-        buf.push_str(&self.column);
-        match self.direction {
-            Asc => buf.push_str(" ASC"),
-            Desc => buf.push_str(" DESC"),
-        }
-    }
-}
-
-impl Default for Direction {
-    fn default() -> Self {
-        Direction::Asc
-    }
-}
-
-
-#[derive(Debug, Clone)]
-pub struct GroupBy(String);
-
-impl ToSql for GroupBy {
-    fn write_sql(&self, buf: &mut String, _: Dialect) {
-        buf.push_str(&self.0)
-    }
-}
+pub use cte::*;
+use join::Join;
 
 /// A SELECT query.
 #[derive(Debug, Clone)]
@@ -340,6 +133,142 @@ impl Select {
         self
     }
 }
+
+/// Represents a select column value.
+#[derive(Debug, Clone)]
+pub enum SelectExpression {
+    Column { schema: Option<String>, table: Option<String>, column: String },
+    Raw(String),
+}
+
+
+/// Represents a column of a SELECT statement.
+#[derive(Debug, Clone)]
+pub struct SelectColumn {
+    pub expression: SelectExpression,
+    pub alias: Option<String>,
+}
+
+impl ToSql for SelectColumn {
+    fn write_sql(&self, buf: &mut String, _: Dialect) {
+        use SelectExpression::*;
+        match &self.expression {
+            Column { schema, table, column } => {
+                if let Some(schema) = schema {
+                    buf.push_quoted(schema);
+                    buf.push('.');
+                }
+                if let Some(table) = table {
+                    buf.push_quoted(table);
+                    buf.push('.');
+                }
+                buf.push_quoted(column);
+            }
+            Raw(raw) => {
+                buf.push_str(raw);
+            }
+        }
+        if let Some(alias) = &self.alias {
+            buf.push_str(" AS ");
+            buf.push_quoted(alias);
+        }
+    }
+}
+
+
+#[derive(Debug, Clone)]
+pub struct From {
+    pub schema: Option<String>,
+    pub table: String,
+    pub alias: Option<String>,
+}
+
+impl ToSql for From {
+    fn write_sql(&self, buf: &mut String, _: Dialect) {
+        buf.push_table_name(&self.schema, &self.table);
+        if let Some(alias) = &self.alias {
+            buf.push_str(" AS ");
+            buf.push_quoted(alias);
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Where {
+    And(Vec<Where>),
+    Or(Vec<Where>),
+    Raw(String),
+}
+
+impl Where {
+    pub fn is_empty(&self) -> bool {
+        use Where::*;
+        match self {
+            And(v) => v.is_empty(),
+            Or(v) => v.is_empty(),
+            Raw(s) => s.is_empty(),
+        }
+    }
+}
+
+impl ToSql for Where {
+    fn write_sql(&self, buf: &mut String, dialect: Dialect) {
+        match self {
+            Where::And(v) => {
+                buf.push_sql_sequence(v, " AND ", dialect);
+            }
+            Where::Or(v) => {
+                buf.push('(');
+                buf.push_sql_sequence(v, " OR ", dialect);
+                buf.push(')');
+            }
+            Where::Raw(s) => {
+                buf.push_str(s);
+            }
+        }
+    }
+}
+
+/// The direction of a column in an ORDER BY clause.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Direction {
+    Asc,
+    Desc,
+}
+
+#[derive(Debug, Clone)]
+pub struct OrderBy {
+    pub column: String,
+    pub direction: Direction,
+}
+
+impl ToSql for OrderBy {
+    fn write_sql(&self, buf: &mut String, _: Dialect) {
+        use Direction::*;
+        buf.push_str(&self.column);
+        match self.direction {
+            Asc => buf.push_str(" ASC"),
+            Desc => buf.push_str(" DESC"),
+        }
+    }
+}
+
+impl Default for Direction {
+    fn default() -> Self {
+        Direction::Asc
+    }
+}
+
+
+#[derive(Debug, Clone)]
+pub struct GroupBy(String);
+
+impl ToSql for GroupBy {
+    fn write_sql(&self, buf: &mut String, _: Dialect) {
+        buf.push_str(&self.0)
+    }
+}
+
 
 impl ToSql for Select {
     fn write_sql(&self, buf: &mut String, dialect: Dialect) {

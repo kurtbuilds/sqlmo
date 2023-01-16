@@ -35,7 +35,7 @@ impl ToSql for CreateIndex {
         }
         buf.push_quoted(&self.name);
         buf.push_str(" ON ");
-        buf.push_table_name(&self.schema, &self.table, None);
+        buf.push_table_name(&self.schema, &self.table);
         buf.push_str(" USING ");
         match self.type_ {
             IndexType::BTree => buf.push_str("BTREE"),
