@@ -7,6 +7,11 @@
 
 mod schema;
 mod migrate;
+mod query;
+mod to_sql;
+mod util;
 
 pub use migrate::*;
 pub use schema::*;
+pub use to_sql::*;
+

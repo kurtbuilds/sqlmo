@@ -817,7 +817,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
-name = "sqldiff"
+name = "sqlformat"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f87e292b4291f154971a43c3774364e2cbcaec599d3f5bf6fa9d122885dbc38a"
+dependencies = [
+ "itertools",
+ "nom",
+ "unicode_categories",
+]
+
+[[package]]
+name = "sqlmo"
 version = "0.4.0"
 dependencies = [
  "anyhow",
@@ -827,17 +838,6 @@ dependencies = [
  "serde_yaml",
  "sqlx",
  "tokio",
-]
-
-[[package]]
-name = "sqlformat"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f87e292b4291f154971a43c3774364e2cbcaec599d3f5bf6fa9d122885dbc38a"
-dependencies = [
- "itertools",
- "nom",
- "unicode_categories",
 ]
 
 [[package]]

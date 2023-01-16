@@ -4,7 +4,8 @@ use sqlx::PgConnection;
 use sqlx::postgres::PgPoolOptions;
 
 use crate::{Schema, schema};
-use crate::schema::{Column, Table};
+use crate::schema::column::TableColumn;
+use crate::schema::table::Table;
 
 const QUERY_COLUMNS: &str = "SELECT
 	table_name, column_name, ordinal_position, is_nullable, data_type
@@ -62,7 +63,7 @@ impl Schema {
                 let columns = group.map(|c: SchemaColumn| {
                     let nullable = c.is_nullable == "YES";
                     let typ = schema::Type::from_str(&c.data_type)?;
-                    Ok(Column {
+                    Ok(TableColumn {
                         name: c.column_name.clone(),
                         typ,
                         nullable,
@@ -70,7 +71,12 @@ impl Schema {
                         default: None,
                     })
                 }).collect::<Result<Vec<_>, Error>>()?;
-                Ok(Table { name: table_name, columns, indexes: vec![] })
+                Ok(Table {
+                    schema: None,
+                    name: table_name,
+                    columns,
+                    indexes: vec![]
+                })
             })
             .collect::<Result<Vec<_>, Error>>()?;
 
@@ -81,6 +87,7 @@ impl Schema {
                 continue;
             }
             tables.push(Table {
+                schema: None,
                 name,
                 columns: vec![],
                 indexes: vec![],

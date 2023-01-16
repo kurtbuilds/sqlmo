@@ -2,25 +2,22 @@ use std::collections::{HashMap, HashSet};
 use std::ops::Sub;
 
 use anyhow::Result;
+use crate::query::AlterTable;
 
-pub use model::*;
-use crate::schema::{Column, Schema, Table, Type};
-
-mod model;
+use crate::query::AlterAction;
+use crate::query::CreateIndex;
+use crate::query::CreateTable;
+use crate::schema::{Schema, Table, TableColumn, Type};
+use crate::{Dialect, ToSql};
 
 /// This is currently empty.
 #[derive(Debug, Clone, Default)]
-pub struct Options {
+pub struct MigrationOptions {
     pub debug: bool,
 }
 
-impl Schema {
-    pub fn migrate_to(self, desired: Schema, options: &Options) -> Result<Migration> {
-        migrate(self, desired, options)
-    }
-}
 
-fn migrate(current: Schema, desired: Schema, options: &Options) -> Result<Migration> {
+pub fn migrate(current: Schema, desired: Schema, options: &MigrationOptions) -> Result<Migration> {
     let current_tables = current.tables.iter().map(|t| (&t.name, t)).collect::<HashMap<_, _>>();
     let desired_tables = desired.tables.iter().map(|t| (&t.name, t)).collect::<HashMap<_, _>>();
 
@@ -40,8 +37,9 @@ fn migrate(current: Schema, desired: Schema, options: &Options) -> Result<Migrat
         let mut matches = true;
         for desired_column in desired_table.columns.iter().filter(|c| !current_columns.contains_key(&c.name)) {
             let statement = Statement::AlterTable(AlterTable {
+                schema: desired_table.schema.clone(),
                 name: desired_table.name.clone(),
-                alter_action: AlterAction::AddColumn {
+                action: AlterAction::AddColumn {
                     column: desired_column.clone(),
                 },
             });
@@ -57,4 +55,34 @@ fn migrate(current: Schema, desired: Schema, options: &Options) -> Result<Migrat
         statements,
         debug_results,
     })
+}
+
+#[derive(Debug)]
+pub struct Migration {
+    pub statements: Vec<Statement>,
+    pub debug_results: Vec<DebugResults>,
+}
+
+
+#[derive(Debug)]
+pub enum Statement {
+    CreateTable(CreateTable),
+    CreateIndex(CreateIndex),
+    AlterTable(AlterTable),
+}
+
+impl ToSql for Statement {
+    fn to_sql(&self, dialect: Dialect) -> String {
+        use Statement::*;
+        match self {
+            CreateTable(c) => c.to_sql(dialect),
+            CreateIndex(c) => c.to_sql(dialect),
+            AlterTable(a) => a.to_sql(dialect),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum DebugResults {
+    TablesIdentical(String)
 }
