@@ -9,6 +9,7 @@ run *ARGS:
 test:
     cargo test
     cargo test --features openapi
+    cargo test --features sqlx
 
 ####
 bootstrap:

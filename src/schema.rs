@@ -1,3 +1,4 @@
+#[cfg(feature = "sqlx")]
 mod from_postgres;
 #[cfg(feature = "openapi")]
 mod from_openapi;

@@ -170,6 +170,7 @@ pub struct Order {
 
 impl ToSql for Order {
     fn to_sql(&self, dialect: Dialect) -> String {
+        use Direction::*;
         let mut sql = String::new();
         sql.push_str(&self.column);
         match self.direction {
