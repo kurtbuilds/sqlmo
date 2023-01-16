@@ -92,6 +92,11 @@ impl Insert {
         self.on_conflict = on_conflict;
         self
     }
+
+    pub fn returning(mut self, returning: &[&str]) -> Self {
+        self.returning = returning.iter().map(|r| r.to_string()).collect();
+        self
+    }
 }
 
 impl ToSql for Insert {
