@@ -379,7 +379,7 @@ mod tests {
             .offset(5);
         assert_eq!(
             select.to_sql(Dialect::Postgres),
-            r#"WITH foo AS (SELECT 1), bar AS (SELECT 1) SELECT id, name FROM "users"  WHERE 1=1 ORDER BY id ASC, name DESC LIMIT 10 OFFSET 5"#
+            r#"WITH foo AS (SELECT 1), bar AS (SELECT 1) SELECT id, name FROM "users" JOIN "posts" ON users.id = posts.user_id WHERE 1=1 ORDER BY id ASC, name DESC LIMIT 10 OFFSET 5"#
         );
     }
 }
