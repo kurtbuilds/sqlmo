@@ -510,9 +510,9 @@ checksum = "6f61fba1741ea2b3d6a1e3178721804bb716a68a6aeba1149b5d52e3d464ea66"
 
 [[package]]
 name = "openapiv3-extended"
-version = "1.0.14"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bab5194ddf813f7d698dcb1ee302f7a5452b3c810cf8fec1bad3a47ea2f12144"
+checksum = "f013a28a3e9dc4b01c80b0341d3b6ef2e438b14e58d71b1734e9b1a0b9eca2a1"
 dependencies = [
  "anyhow",
  "http",
