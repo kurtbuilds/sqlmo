@@ -61,6 +61,39 @@ pub struct Insert {
     pub returning: Vec<String>,
 }
 
+impl Insert {
+    pub fn new(table: &str) -> Self {
+        Self {
+            schema: None,
+            table: table.to_string(),
+            columns: Vec::new(),
+            values: Values::DefaultValues,
+            on_conflict: OnConflict::default(),
+            returning: Vec::new(),
+        }
+    }
+
+    pub fn schema(mut self, schema: &str) -> Self {
+        self.schema = Some(schema.to_string());
+        self
+    }
+
+    pub fn columns(mut self, columns: &[&str]) -> Self {
+        self.columns = columns.iter().map(|c| c.to_string()).collect();
+        self
+    }
+
+    pub fn one_value(mut self, values: &[&str]) -> Self {
+        self.values = Values::Values(vec![values.iter().map(|v| v.to_string()).collect()]);
+        self
+    }
+
+    pub fn on_conflict(mut self, on_conflict: OnConflict) -> Self {
+        self.on_conflict = on_conflict;
+        self
+    }
+}
+
 impl ToSql for Insert {
     fn write_sql(&self, buf: &mut String, dialect: Dialect) {
         use Dialect::*;

@@ -1,11 +1,26 @@
 use crate::{Dialect, ToSql};
 use crate::util::SqlExtension;
 
+#[derive(Debug, Clone)]
+pub enum CteQuery {
+    Select(Select),
+    Raw(String),
+}
+
+impl ToSql for CteQuery {
+    fn write_sql(&self, buf: &mut String, dialect: Dialect) {
+        match self {
+            CteQuery::Select(s) => s.write_sql(buf, dialect),
+            CteQuery::Raw(s) => buf.push_str(s),
+        }
+    }
+}
+
 /// Common table expression
 #[derive(Debug, Clone)]
 pub struct Cte {
     pub name: String,
-    pub query: Select,
+    pub query: CteQuery,
 }
 
 impl ToSql for Cte {
@@ -21,7 +36,7 @@ impl ToSql for Cte {
 #[derive(Debug, Clone)]
 pub enum SelectExpression {
     Column { schema: Option<String>, table: Option<String>, column: String },
-    Literal(String),
+    Raw(String),
 }
 
 
@@ -47,8 +62,8 @@ impl ToSql for SelectColumn {
                 }
                 buf.push_quoted(column);
             }
-            Literal(literal) => {
-                buf.push_str(literal);
+            Raw(raw) => {
+                buf.push_str(raw);
             }
         }
         if let Some(alias) = &self.alias {
@@ -76,7 +91,7 @@ impl ToSql for From {
 pub enum Where {
     And(Vec<Where>),
     Or(Vec<Where>),
-    Literal(String),
+    Raw(String),
 }
 
 impl Where {
@@ -85,7 +100,7 @@ impl Where {
         match self {
             And(v) => v.is_empty(),
             Or(v) => v.is_empty(),
-            Literal(s) => s.is_empty(),
+            Raw(s) => s.is_empty(),
         }
     }
 }
@@ -101,7 +116,7 @@ impl ToSql for Where {
                 buf.push_sql_sequence(v, " OR ", dialect);
                 buf.push(')');
             }
-            Where::Literal(s) => {
+            Where::Raw(s) => {
                 buf.push_str(s);
             }
         }
@@ -184,13 +199,9 @@ impl ToSql for OrderBy {
     }
 }
 
-
-impl OrderBy {
-    pub fn asc() -> Direction {
+impl Default for Direction {
+    fn default() -> Self {
         Direction::Asc
-    }
-    pub fn desc() -> Direction {
-        Direction::Desc
     }
 }
 
@@ -237,10 +248,18 @@ impl Select {
         }
     }
 
-    pub fn cte(mut self, name: &str, query: Select) -> Self {
+    pub fn with_raw(mut self, name: &str, query: &str) -> Self {
         self.ctes.push(Cte {
             name: name.to_string(),
-            query,
+            query: CteQuery::Raw(query.to_string()),
+        });
+        self
+    }
+
+    pub fn with(mut self, name: &str, query: Select) -> Self {
+        self.ctes.push(Cte {
+            name: name.to_string(),
+            query: CteQuery::Select(query),
         });
         self
     }
@@ -250,10 +269,10 @@ impl Select {
         self
     }
 
-    pub fn select(mut self, expression: SelectExpression, alias: Option<&str>) -> Self {
+    pub fn select(mut self, expression: &str) -> Self {
         self.columns.push(SelectColumn {
-            expression,
-            alias: alias.map(|s| s.to_string()),
+            expression: SelectExpression::Raw(expression.to_string()),
+            alias: None,
         });
         self
     }
@@ -276,6 +295,10 @@ impl Select {
         self
     }
 
+    pub fn where_raw(mut self, where_: &str) -> Self {
+        self.where_(Where::Raw(where_.to_string()))
+    }
+
     pub fn group(mut self, group: &str) -> Self {
         self.group.push(GroupBy(group.to_string()));
         self
@@ -289,12 +312,20 @@ impl Select {
         self
     }
 
-    pub fn order(mut self, order: &str, direction: Direction) -> Self {
+    pub fn order_by(mut self, order: &str, direction: Direction) -> Self {
         self.order.push(OrderBy {
             column: order.to_string(),
             direction,
         });
         self
+    }
+
+    pub fn order_asc(mut self, order: &str) -> Self {
+        self.order_by(order, Direction::Asc)
+    }
+
+    pub fn order_desc(mut self, order: &str) -> Self {
+        self.order_by(order, Direction::Desc)
     }
 
     pub fn limit(mut self, limit: usize) -> Self {
@@ -352,5 +383,30 @@ impl ToSql for Select {
             buf.push_str(" OFFSET ");
             buf.push_str(&offset.to_string());
         }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_basic() {
+        let select = Select::new()
+            .with_raw("foo", "SELECT 1")
+            .with("bar", Select::new().select("1"))
+            .select("id")
+            .select("name")
+            .from("users")
+            .where_raw("1=1")
+            .order_asc("id")
+            .order_desc("name")
+            .limit(10)
+            .offset(5);
+        assert_eq!(
+            select.to_sql(Dialect::Postgres),
+            r#"WITH foo AS (SELECT 1), bar AS (SELECT 1) SELECT id, name FROM "users"  WHERE 1=1 ORDER BY id ASC, name DESC LIMIT 10 OFFSET 5"#
+        );
     }
 }
