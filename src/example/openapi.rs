@@ -4,7 +4,7 @@ use std::fs::File;
 use anyhow::Result;
 use openapiv3::OpenAPI;
 use sqlx::{Connection, Executor};
-use sqldiff::Schema;
+use sqlmo::Schema;
 
 #[derive(Parser)]
 #[command(author, version, about)]
