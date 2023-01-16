@@ -1,11 +1,11 @@
-use crate::{Dialect, TableColumn, ToSql};
+use crate::{Dialect, Column, ToSql};
 use crate::util::table_name;
 
 /// Alter table action
 #[derive(Debug)]
 pub enum AlterAction {
     AddColumn {
-        column: TableColumn,
+        column: Column,
     },
 }
 

@@ -1,4 +1,4 @@
-use crate::{Dialect, Table, TableColumn, ToSql};
+use crate::{Dialect, Table, Column, ToSql};
 use crate::util::table_name;
 
 /// Create table action
@@ -6,7 +6,7 @@ use crate::util::table_name;
 pub struct CreateTable {
     pub schema: Option<String>,
     pub name: String,
-    pub columns: Vec<TableColumn>,
+    pub columns: Vec<Column>,
 }
 
 

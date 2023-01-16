@@ -2,7 +2,7 @@ use openapiv3::{OpenAPI, Schema as OaSchema, SchemaKind, Type as OaType};
 use convert_case::{Case, Casing};
 use crate::schema::Type;
 use crate::Schema;
-use crate::schema::column::TableColumn;
+use crate::schema::column::Column;
 use crate::schema::table::Table;
 
 impl TryFrom<OpenAPI> for Schema {
@@ -52,12 +52,12 @@ fn oaschema_to_sqltype(schema: &OaSchema, spec:&OpenAPI) -> anyhow::Result<Type>
     Ok(s)
 }
 
-fn schema_to_columns(schema: &OaSchema, spec: &OpenAPI) -> anyhow::Result<Vec<TableColumn>> {
+fn schema_to_columns(schema: &OaSchema, spec: &OpenAPI) -> anyhow::Result<Vec<Column>> {
     let mut columns = vec![];
     let props = schema.properties().ok_or(anyhow::anyhow!("No properties"))?;
     for (name, prop) in props.into_iter() {
         let prop = prop.resolve(spec);
-        let column = TableColumn {
+        let column = Column {
             primary_key: false,
             name: name.to_case(Case::Snake),
             typ: oaschema_to_sqltype(prop, spec)?,

@@ -1,11 +1,11 @@
 use crate::schema::index::Index;
-use crate::schema::column::TableColumn;
+use crate::schema::column::Column;
 
 #[derive(Debug)]
 pub struct Table {
     pub schema: Option<String>,
     pub name: String,
-    pub columns: Vec<TableColumn>,
+    pub columns: Vec<Column>,
     pub indexes: Vec<Index>,
 }
 
@@ -19,7 +19,7 @@ impl Table {
         }
     }
 
-    pub fn column(mut self, column: TableColumn) -> Self {
+    pub fn column(mut self, column: Column) -> Self {
         self.columns.push(column);
         self
     }

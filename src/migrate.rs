@@ -1,3 +1,4 @@
+/// Defines structs and functions for auto-generating migrations.
 use std::collections::{HashMap, HashSet};
 use std::ops::Sub;
 
@@ -7,10 +8,9 @@ use crate::query::AlterTable;
 use crate::query::AlterAction;
 use crate::query::CreateIndex;
 use crate::query::CreateTable;
-use crate::schema::{Schema, Table, TableColumn, Type};
+use crate::schema::{Schema, Table, Column, Type};
 use crate::{Dialect, ToSql};
 
-/// This is currently empty.
 #[derive(Debug, Clone, Default)]
 pub struct MigrationOptions {
     pub debug: bool,

@@ -4,7 +4,7 @@ use sqlx::PgConnection;
 use sqlx::postgres::PgPoolOptions;
 
 use crate::{Schema, schema};
-use crate::schema::column::TableColumn;
+use crate::schema::column::Column;
 use crate::schema::table::Table;
 
 const QUERY_COLUMNS: &str = "SELECT
@@ -63,7 +63,7 @@ impl Schema {
                 let columns = group.map(|c: SchemaColumn| {
                     let nullable = c.is_nullable == "YES";
                     let typ = schema::Type::from_str(&c.data_type)?;
-                    Ok(TableColumn {
+                    Ok(Column {
                         name: c.column_name.clone(),
                         typ,
                         nullable,

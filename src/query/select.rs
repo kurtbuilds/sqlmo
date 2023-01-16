@@ -2,6 +2,7 @@ use crate::{Dialect, ToSql};
 use crate::query::Direction::Asc;
 use crate::util::{column_name, push_sql_sequence, quote};
 
+/// Common table expression
 #[derive(Debug, Clone)]
 pub struct Cte {
     pub name: String,
@@ -19,22 +20,24 @@ impl ToSql for Cte {
     }
 }
 
+/// Represents a select column value.
 #[derive(Debug, Clone)]
-pub enum Expression {
+pub enum SelectExpression {
     Column { schema: Option<String>, table: Option<String>, column: String },
     Literal(String),
 }
 
 
+/// Represents a column of a SELECT statement.
 #[derive(Debug, Clone)]
-pub struct QueryColumn {
-    pub expression: Expression,
+pub struct SelectColumn {
+    pub expression: SelectExpression,
     pub alias: Option<String>,
 }
 
-impl ToSql for QueryColumn {
+impl ToSql for SelectColumn {
     fn to_sql(&self, dialect: Dialect) -> String {
-        use Expression::*;
+        use SelectExpression::*;
         let mut sql = String::new();
         match &self.expression {
             Column { schema, table, column } => {
@@ -156,6 +159,7 @@ impl ToSql for Join {
     }
 }
 
+/// The direction of a column in an ORDER BY clause.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Direction {
     Asc,
@@ -163,12 +167,12 @@ pub enum Direction {
 }
 
 #[derive(Debug, Clone)]
-pub struct Order {
+pub struct OrderBy {
     pub column: String,
     pub direction: Direction,
 }
 
-impl ToSql for Order {
+impl ToSql for OrderBy {
     fn to_sql(&self, dialect: Dialect) -> String {
         use Direction::*;
         let mut sql = String::new();
@@ -182,7 +186,7 @@ impl ToSql for Order {
 }
 
 
-impl Order {
+impl OrderBy {
     pub fn asc() -> Direction {
         Direction::Asc
     }
@@ -193,25 +197,26 @@ impl Order {
 
 
 #[derive(Debug, Clone)]
-pub struct Group(String);
+pub struct GroupBy(String);
 
-impl ToSql for Group {
+impl ToSql for GroupBy {
     fn to_sql(&self, dialect: Dialect) -> String {
         self.0.clone()
     }
 }
 
+/// A SELECT query.
 #[derive(Debug, Clone)]
 pub struct Select {
     pub ctes: Vec<Cte>,
     pub distinct: bool,
-    pub columns: Vec<QueryColumn>,
+    pub columns: Vec<SelectColumn>,
     pub from: Option<From>,
     pub join: Vec<Join>,
     pub where_: Where,
-    pub group: Vec<Group>,
+    pub group: Vec<GroupBy>,
     pub having: Where,
-    pub order: Vec<Order>,
+    pub order: Vec<OrderBy>,
     pub limit: Option<usize>,
     pub offset: Option<usize>,
 }
@@ -246,8 +251,8 @@ impl Select {
         self
     }
 
-    pub fn select(mut self, expression: Expression, alias: Option<&str>) -> Self {
-        self.columns.push(QueryColumn {
+    pub fn select(mut self, expression: SelectExpression, alias: Option<&str>) -> Self {
+        self.columns.push(SelectColumn {
             expression,
             alias: alias.map(|s| s.to_string()),
         });
@@ -263,6 +268,7 @@ impl Select {
         self
     }
 
+    /// Assumes `AND`. Access the `.where_` field directly for more advanced operations.
     pub fn where_(mut self, where_: Where) -> Self {
         match self.where_ {
             Where::And(ref mut v) => v.push(where_),
@@ -272,7 +278,7 @@ impl Select {
     }
 
     pub fn group(mut self, group: &str) -> Self {
-        self.group.push(Group(group.to_string()));
+        self.group.push(GroupBy(group.to_string()));
         self
     }
 
@@ -285,7 +291,7 @@ impl Select {
     }
 
     pub fn order(mut self, order: &str, direction: Direction) -> Self {
-        self.order.push(Order {
+        self.order.push(OrderBy {
             column: order.to_string(),
             direction: direction,
         });

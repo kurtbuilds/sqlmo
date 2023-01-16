@@ -1,7 +1,7 @@
 use crate::{Type, ToSql, Dialect};
 
 #[derive(Debug, Clone)]
-pub struct TableColumn {
+pub struct Column {
     pub name: String,
     pub typ: Type,
     pub nullable: bool,
@@ -10,7 +10,7 @@ pub struct TableColumn {
 }
 
 
-impl ToSql for TableColumn {
+impl ToSql for Column {
     fn to_sql(&self, dialect: Dialect) -> String {
         let mut sql = String::new();
         sql.push_str(&self.name);

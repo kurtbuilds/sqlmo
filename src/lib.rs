@@ -5,14 +5,18 @@
 // - build a diff
 // - Execute SQL
 
-mod schema;
-mod migrate;
-mod query;
+pub mod schema;
+pub mod migrate;
+pub mod query;
 mod to_sql;
 mod util;
 
-pub use migrate::*;
-pub use schema::*;
-pub use to_sql::*;
-pub use query::*;
+#[doc(inline)]
+pub use migrate::{Migration, MigrationOptions, migrate};
+#[doc(inline)]
+pub use schema::{Schema, Table, Column, Type};
+#[doc(inline)]
+pub use to_sql::{ToSql, Dialect};
+#[doc(inline)]
+pub use query::{Select, Insert, CreateIndex, CreateTable, AlterTable};
 

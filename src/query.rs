@@ -1,4 +1,4 @@
-
+/// Defines structs and functions for representing SQL queries.
 mod select;
 mod insert;
 mod update;
