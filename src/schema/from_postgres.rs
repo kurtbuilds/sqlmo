@@ -44,7 +44,7 @@ pub struct TableSchema {
     pub table_name: String,
 }
 
-pub async fn query_table_names(mut conn: &mut PgConnection, schema_name: &str) -> Result<Vec<String>> {
+pub async fn query_table_names(conn: &mut PgConnection, schema_name: &str) -> Result<Vec<String>> {
     let result = sqlx::query_as::<_, TableSchema>(QUERY_TABLES)
         .bind(schema_name)
         .fetch_all(conn)
