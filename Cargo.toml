@@ -1,6 +1,6 @@
 [package]
 name = "sqlmo"
-version = "0.7.7"
+version = "0.7.8"
 edition = "2021"
 description = "SQL data primitives. Use it to generate SQL queries, auto-generate SQL migrations, and more."
 license = "MIT"
