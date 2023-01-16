@@ -301,7 +301,7 @@ impl Select {
         self.where_(Where::Raw(where_.to_string()))
     }
 
-    pub fn group(mut self, group: &str) -> Self {
+    pub fn group_by(mut self, group: &str) -> Self {
         self.group.push(GroupBy(group.to_string()));
         self
     }
