@@ -1,7 +1,7 @@
+use std::str::FromStr;
 use anyhow::{Error, Result};
 use itertools::Itertools;
 use sqlx::PgConnection;
-use sqlx::postgres::PgPoolOptions;
 
 use crate::{Schema, schema};
 use crate::schema::column::Column;
@@ -30,7 +30,7 @@ pub struct SchemaColumn {
     pub data_type: String,
 }
 
-pub async fn query_schema_columns(mut conn: &mut PgConnection, schema_name: &str) -> Result<Vec<SchemaColumn>> {
+pub async fn query_schema_columns(conn: &mut PgConnection, schema_name: &str) -> Result<Vec<SchemaColumn>> {
     let result = sqlx::query_as::<_, SchemaColumn>(QUERY_COLUMNS)
         .bind(schema_name)
         .fetch_all(conn)
