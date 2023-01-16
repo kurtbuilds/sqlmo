@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use anyhow::{anyhow, Result};
 use crate::to_sql::{Dialect, ToSql};
 
@@ -26,8 +27,10 @@ pub enum Type {
     Text,
 }
 
-impl Type {
-    pub fn from_str(s: &str) -> Result<Self> {
+impl FromStr for Type {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
         use Type::*;
         let s = match s {
             "bigint" => BigInt,

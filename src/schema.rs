@@ -17,17 +17,12 @@ use crate::migrate::{Migration, migrate, MigrationOptions};
 
 /// Represents a SQL database schema.
 #[derive(Debug)]
+#[derive(Default)]
 pub struct Schema {
     pub tables: Vec<Table>,
 }
 
-impl Default for Schema {
-    fn default() -> Self {
-        Schema {
-            tables: vec![],
-        }
-    }
-}
+
 
 impl Schema {
     /// Calculate the migration necessary to move from `self: Schema` to the argument `desired: Schema`.
