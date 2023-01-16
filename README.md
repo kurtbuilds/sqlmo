@@ -50,7 +50,7 @@ async fn main() {
     let url = std::env::var("DATABASE_URL").unwrap();
     let mut conn = sqlx::postgres::PgConnection::connect(&url).await?;
     let current = Schema::try_from_database(&mut conn, schema_name).await?;
-    let end_state = Schema::new(); // Load your end-state by manually defining it, or building it from another source
+    let end_state = Schema::default(); // Load your end-state by manually defining it, or building it from another source
     let migration = current.migrate_to(end_state, &sqlmo::Options::default());
     
     for statement in migration.statements {

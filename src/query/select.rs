@@ -231,9 +231,9 @@ pub struct Select {
     pub offset: Option<usize>,
 }
 
-impl Select {
-    pub fn new() -> Self {
-        Select {
+impl Default for Select {
+    fn default() -> Self {
+        Self {
             ctes: vec![],
             distinct: false,
             columns: vec![],
@@ -247,7 +247,9 @@ impl Select {
             offset: None,
         }
     }
+}
 
+impl Select {
     pub fn with_raw(mut self, name: &str, query: &str) -> Self {
         self.ctes.push(Cte {
             name: name.to_string(),
@@ -295,7 +297,7 @@ impl Select {
         self
     }
 
-    pub fn where_raw(mut self, where_: &str) -> Self {
+    pub fn where_raw(self, where_: &str) -> Self {
         self.where_(Where::Raw(where_.to_string()))
     }
 
@@ -320,11 +322,11 @@ impl Select {
         self
     }
 
-    pub fn order_asc(mut self, order: &str) -> Self {
+    pub fn order_asc(self, order: &str) -> Self {
         self.order_by(order, Direction::Asc)
     }
 
-    pub fn order_desc(mut self, order: &str) -> Self {
+    pub fn order_desc(self, order: &str) -> Self {
         self.order_by(order, Direction::Desc)
     }
 
@@ -393,9 +395,9 @@ mod tests {
 
     #[test]
     fn test_basic() {
-        let select = Select::new()
+        let select = Select::default()
             .with_raw("foo", "SELECT 1")
-            .with("bar", Select::new().select("1"))
+            .with("bar", Select::default().select("1"))
             .select("id")
             .select("name")
             .from("users")

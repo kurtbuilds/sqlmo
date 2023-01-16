@@ -4,7 +4,7 @@ pub trait SqlExtension {
     fn push_quoted<T: AsRef<str>>(&mut self, s: T);
     fn push_table_name(&mut self, schema: &Option<String>, table: &str, alias: Option<&String>);
     fn push_sql<T: ToSql>(&mut self, sql: &T, dialect: Dialect);
-    fn push_sql_sequence<T: ToSql>(&mut self, sql: &Vec<T>, separator: &str, dialect: Dialect);
+    fn push_sql_sequence<T: ToSql>(&mut self, sql: &[T], separator: &str, dialect: Dialect);
 }
 
 impl SqlExtension for String {
@@ -33,7 +33,7 @@ impl SqlExtension for String {
         sql.write_sql(self, dialect);
     }
 
-    fn push_sql_sequence<T: ToSql>(&mut self, sql: &Vec<T>, separator: &str, dialect: Dialect) {
+    fn push_sql_sequence<T: ToSql>(&mut self, sql: &[T], separator: &str, dialect: Dialect) {
         let mut first = true;
         for s in sql {
             if !first {

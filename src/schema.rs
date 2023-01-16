@@ -21,13 +21,15 @@ pub struct Schema {
     pub tables: Vec<Table>,
 }
 
-impl Schema {
-    pub fn new() -> Schema {
+impl Default for Schema {
+    fn default() -> Self {
         Schema {
             tables: vec![],
         }
     }
+}
 
+impl Schema {
     /// Calculate the migration necessary to move from `self: Schema` to the argument `desired: Schema`.
     pub fn migrate_to(self, desired: Schema, options: &MigrationOptions) -> Result<Migration> {
         migrate(self, desired, options)

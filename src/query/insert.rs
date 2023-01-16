@@ -29,7 +29,7 @@ impl ToSql for Values {
                         if !first {
                             buf.push_str(", ");
                         }
-                        buf.push_str(&v);
+                        buf.push_str(v);
                         first = false;
                     }
                     buf.push(')');
