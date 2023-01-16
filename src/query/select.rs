@@ -81,6 +81,11 @@ impl Select {
         self
     }
 
+    pub fn join(mut self, join: Join) -> Self {
+        self.join.push(join);
+        self
+    }
+
     /// Assumes `AND`. Access the `.where_` field directly for more advanced operations.
     pub fn where_(mut self, where_: Where) -> Self {
         match self.where_ {
@@ -366,6 +371,7 @@ mod tests {
             .select("id")
             .select("name")
             .from("users")
+            .join(Join::new("posts").on_raw("users.id = posts.user_id"))
             .where_raw("1=1")
             .order_asc("id")
             .order_desc("name")
