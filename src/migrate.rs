@@ -1,5 +1,5 @@
-use std::collections::{HashMap, HashSet};
-use std::ops::Sub;
+use std::collections::{HashMap};
+
 
 use anyhow::Result;
 use crate::query::AlterTable;
@@ -7,7 +7,7 @@ use crate::query::AlterTable;
 use crate::query::AlterAction;
 use crate::query::CreateIndex;
 use crate::query::CreateTable;
-use crate::schema::{Schema, Table, Column, Type};
+use crate::schema::{Schema};
 use crate::{Dialect, ToSql};
 
 #[derive(Debug, Clone, Default)]
@@ -16,14 +16,14 @@ pub struct MigrationOptions {
 }
 
 
-pub fn migrate(current: Schema, desired: Schema, options: &MigrationOptions) -> Result<Migration> {
+pub fn migrate(current: Schema, desired: Schema, _options: &MigrationOptions) -> Result<Migration> {
     let current_tables = current.tables.iter().map(|t| (&t.name, t)).collect::<HashMap<_, _>>();
     let desired_tables = desired.tables.iter().map(|t| (&t.name, t)).collect::<HashMap<_, _>>();
 
     let mut debug_results = vec![];
     let mut statements = Vec::new();
     // new tables
-    for (name, table) in desired_tables.iter().filter(|(name, _)| !current_tables.contains_key(*name)) {
+    for (_name, table) in desired_tables.iter().filter(|(name, _)| !current_tables.contains_key(*name)) {
         let statement = Statement::CreateTable(CreateTable::from_table(table));
         statements.push(statement);
     }

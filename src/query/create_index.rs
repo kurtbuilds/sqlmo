@@ -8,7 +8,7 @@ pub struct CreateIndex {
 }
 
 impl ToSql for CreateIndex {
-    fn to_sql(&self, dialect: Dialect) -> String {
+    fn to_sql(&self, _dialect: Dialect) -> String {
         unimplemented!()
     }
 }

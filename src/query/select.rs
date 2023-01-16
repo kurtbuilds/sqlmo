@@ -1,5 +1,5 @@
 use crate::{Dialect, ToSql};
-use crate::query::Direction::Asc;
+
 use crate::util::{column_name, push_sql_sequence, quote};
 
 /// Common table expression
@@ -15,7 +15,7 @@ impl ToSql for Cte {
         sql.push_str(&self.name);
         sql.push_str(" AS (");
         sql.push_str(&self.query.to_sql(dialect));
-        sql.push_str(")");
+        sql.push(')');
         sql
     }
 }
@@ -36,7 +36,7 @@ pub struct SelectColumn {
 }
 
 impl ToSql for SelectColumn {
-    fn to_sql(&self, dialect: Dialect) -> String {
+    fn to_sql(&self, _dialect: Dialect) -> String {
         use SelectExpression::*;
         let mut sql = String::new();
         match &self.expression {
@@ -64,7 +64,7 @@ pub struct From {
 }
 
 impl ToSql for From {
-    fn to_sql(&self, dialect: Dialect) -> String {
+    fn to_sql(&self, _dialect: Dialect) -> String {
         crate::util::table_name(self.schema.as_ref(), &self.table, self.alias.as_ref())
     }
 }
@@ -97,9 +97,9 @@ impl ToSql for Where {
             }
             Where::Or(v) => {
                 let mut sql = String::new();
-                sql.push_str("(");
+                sql.push('(');
                 push_sql_sequence(&mut sql, v, " OR ", dialect);
-                sql.push_str(")");
+                sql.push(')');
                 sql
             }
             Where::Literal(s) => s.clone(),
@@ -141,9 +141,9 @@ impl ToSql for Join {
         }
         match &self.table {
             JoinTable::Select(s) => {
-                sql.push_str("(");
+                sql.push('(');
                 sql.push_str(&s.to_sql(dialect));
-                sql.push_str(")");
+                sql.push(')');
             }
             JoinTable::Table(f) => {
                 sql.push_str(&f.to_sql(dialect));
@@ -151,7 +151,7 @@ impl ToSql for Join {
         }
         if let Some(alias) = &self.alias {
             sql.push_str(" AS ");
-            sql.push_str(&alias);
+            sql.push_str(alias);
         }
         sql.push_str(" ON ");
         sql.push_str(&self.on.to_sql(dialect));
@@ -173,7 +173,7 @@ pub struct OrderBy {
 }
 
 impl ToSql for OrderBy {
-    fn to_sql(&self, dialect: Dialect) -> String {
+    fn to_sql(&self, _dialect: Dialect) -> String {
         use Direction::*;
         let mut sql = String::new();
         sql.push_str(&self.column);
@@ -200,7 +200,7 @@ impl OrderBy {
 pub struct GroupBy(String);
 
 impl ToSql for GroupBy {
-    fn to_sql(&self, dialect: Dialect) -> String {
+    fn to_sql(&self, _dialect: Dialect) -> String {
         self.0.clone()
     }
 }
@@ -293,7 +293,7 @@ impl Select {
     pub fn order(mut self, order: &str, direction: Direction) -> Self {
         self.order.push(OrderBy {
             column: order.to_string(),
-            direction: direction,
+            direction,
         });
         self
     }
@@ -315,7 +315,7 @@ impl ToSql for Select {
         if !self.ctes.is_empty() {
             sql.push_str("WITH ");
             push_sql_sequence(&mut sql, &self.ctes, ", ", dialect);
-            sql.push_str(" ");
+            sql.push(' ');
         }
         sql.push_str("SELECT ");
         if self.distinct {
@@ -325,7 +325,7 @@ impl ToSql for Select {
         if let Some(from) = &self.from {
             sql.push_str(" FROM ");
             sql.push_str(&from.to_sql(dialect));
-            sql.push_str(" ");
+            sql.push(' ');
         }
         if !self.join.is_empty() {
             push_sql_sequence(&mut sql, &self.join, " ", dialect);

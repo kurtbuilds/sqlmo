@@ -1,5 +1,5 @@
 use crate::{Dialect, ToSql};
-use crate::util::{quote, table_name};
+use crate::util::{push_sql_sequence, quote, table_name};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum OnConflict {
@@ -14,11 +14,23 @@ impl Default for OnConflict {
     }
 }
 
+pub struct Values(pub Vec<String>);
+
+impl ToSql for Values {
+    fn to_sql(&self, _dialect: Dialect) -> String {
+        let mut sql = String::new();
+        sql.push('(');
+        push_sql_sequence(&mut sql, &self.0, ", ", Dialect::Postgres);
+        sql.push(')');
+        sql
+    }
+}
+
 pub struct Insert {
     pub schema: Option<String>,
     pub table: String,
     pub columns: Vec<String>,
-    pub values: Vec<Vec<String>>,
+    pub values: Vec<Values>,
     pub on_conflict: OnConflict,
     pub returning: Vec<String>,
 }
@@ -41,32 +53,10 @@ impl ToSql for Insert {
         let mut q = query_start(dialect, self.on_conflict);
         q.push_str(&table_name(self.schema.as_ref(), &self.table, None));
         q.push_str(" (");
-        let mut first = true;
-        for column in &self.columns {
-            if !first {
-                q.push_str(", ");
-            }
-            q.push_str(quote(column).as_str());
-            first = false;
-        }
+        push_sql_sequence(&mut q, &self.columns, ", ", dialect);
         q.push_str(") VALUES ");
-        let mut first = true;
-        for row in &self.values {
-            if !first {
-                q.push_str(", ");
-            }
-            q.push_str("(");
-            let mut first = true;
-            for value in row {
-                if !first {
-                    q.push_str(", ");
-                }
-                q.push_str(value.as_str());
-                first = false;
-            }
-            q.push_str(")");
-            first = false;
-        }
+        push_sql_sequence(&mut q, &self.values, ", ", dialect);
+
         if !self.returning.is_empty() {
             q.push_str(" RETURNING ");
             let mut first = true;
@@ -79,5 +69,26 @@ impl ToSql for Insert {
             }
         }
         q
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_basic() {
+        let insert = Insert {
+            schema: None,
+            table: "foo".to_string(),
+            columns: vec!["bar".to_string(), "baz".to_string()],
+            values: vec![
+                Values(vec!["1".to_string(), "2".to_string()]),
+                Values(vec!["3".to_string(), "4".to_string()]),
+            ],
+            on_conflict: OnConflict::Abort,
+            returning: vec!["id".to_string()],
+        };
+        assert_eq!(1, 0);
     }
 }

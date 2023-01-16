@@ -52,7 +52,7 @@ impl Type {
 }
 
 impl ToSql for Type {
-    fn to_sql(&self, dialect: Dialect) -> String {
+    fn to_sql(&self, _dialect: Dialect) -> String {
         use self::Type::*;
         match self {
             BigInt => "bigint".to_string(),
