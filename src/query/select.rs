@@ -6,7 +6,7 @@ mod cte;
 mod join;
 
 pub use cte::*;
-use join::Join;
+pub use join::*;
 
 /// A SELECT query.
 #[derive(Debug, Clone)]
@@ -64,9 +64,14 @@ impl Select {
         self
     }
 
-    pub fn select(mut self, expression: &str) -> Self {
+    pub fn table_column(mut self, table: &str, column: &str) -> Self {
+        self.columns.push(SelectColumn::table_column(table, column));
+        self
+    }
+
+    pub fn select_raw(mut self, expression: impl Into<String>) -> Self {
         self.columns.push(SelectColumn {
-            expression: SelectExpression::Raw(expression.to_string()),
+            expression: SelectExpression::Raw(expression.into()),
             alias: None,
         });
         self
@@ -95,8 +100,8 @@ impl Select {
         self
     }
 
-    pub fn where_raw(self, where_: &str) -> Self {
-        self.where_(Where::Raw(where_.to_string()))
+    pub fn where_raw(self, where_: impl Into<String>) -> Self {
+        self.where_(Where::Raw(where_.into()))
     }
 
     pub fn group_by(mut self, group: &str) -> Self {
@@ -367,9 +372,9 @@ mod tests {
     fn test_basic() {
         let select = Select::default()
             .with_raw("foo", "SELECT 1")
-            .with("bar", Select::default().select("1"))
-            .select("id")
-            .select("name")
+            .with("bar", Select::default().select_raw("1"))
+            .select_raw("id")
+            .select_raw("name")
             .from("users")
             .join(Join::new("posts").on_raw("users.id = posts.user_id"))
             .where_raw("1=1")
