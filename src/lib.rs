@@ -14,4 +14,5 @@ mod util;
 pub use migrate::*;
 pub use schema::*;
 pub use to_sql::*;
+pub use query::*;
 
