@@ -1,13 +1,10 @@
-#![allow(unused)]
-
-//
-// Given a OpenAPI spec, a connection to a database, and the schema within that database,
-// - build a diff
-// - Execute SQL
-
+/// Defines structs and functions for representing SQL database schemas.
 pub mod schema;
+/// Defines structs and functions for auto-generating migrations.
 pub mod migrate;
+/// Defines structs and functions for representing SQL queries.
 pub mod query;
+
 mod to_sql;
 mod util;
 

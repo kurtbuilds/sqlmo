@@ -1,4 +1,3 @@
-/// Defines structs and functions for representing SQL database schemas.
 #[cfg(feature = "sqlx")]
 mod from_postgres;
 #[cfg(feature = "openapi")]

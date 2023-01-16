@@ -1,4 +1,3 @@
-/// Defines structs and functions for auto-generating migrations.
 use std::collections::{HashMap, HashSet};
 use std::ops::Sub;
 
