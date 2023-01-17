@@ -5,17 +5,30 @@ use crate::Schema;
 use crate::schema::column::Column;
 use crate::schema::table::Table;
 
-impl TryFrom<OpenAPI> for Schema {
-    type Error = anyhow::Error;
+#[derive(Debug, Clone)]
+pub struct FromOpenApiOptions {
+    pub include_arrays: bool,
+}
 
-    fn try_from(spec: OpenAPI) -> Result<Self, Self::Error> {
+impl Default for FromOpenApiOptions {
+    fn default() -> Self {
+        Self {
+            include_arrays: false,
+        }
+    }
+}
+
+impl Schema {
+    pub fn try_from_openapi(spec: OpenAPI, options: &FromOpenApiOptions) -> anyhow::Result<Self> {
         let mut tables = Vec::new();
         if let Some(components) = &spec.components {
             for (schema_name, schema) in components.schemas.iter().filter(|(schema_name, _)| {
                 !schema_name.ends_with("Response")
             }) {
                 let schema = schema.resolve(&spec);
-                let columns = schema_to_columns(&schema, &spec)?;
+                let Some(columns) =  schema_to_columns(&schema, &spec, options)? else {
+                    continue
+                };
                 let table = Table {
                     schema: None,
                     name: schema_name.to_case(Case::Snake),
@@ -31,7 +44,7 @@ impl TryFrom<OpenAPI> for Schema {
     }
 }
 
-fn oaschema_to_sqltype(schema: &OaSchema, _: &OpenAPI) -> anyhow::Result<Type> {
+fn oaschema_to_sqltype(schema: &OaSchema, _: &OpenAPI, options: &FromOpenApiOptions) -> anyhow::Result<Option<Type>> {
     use Type::*;
     let s = match schema.schema_kind {
         SchemaKind::Type(OaType::String(_)) => {
@@ -46,24 +59,40 @@ fn oaschema_to_sqltype(schema: &OaSchema, _: &OpenAPI) -> anyhow::Result<Type> {
         SchemaKind::Type(OaType::Number(_)) => {
             Numeric
         }
-        _ => panic!("Unsupported type: {:?}", schema)
+        SchemaKind::Type(OaType::Array(_)) => {
+            if options.include_arrays {
+                Jsonb
+            } else {
+                return Ok(None);
+            }
+        }
+        SchemaKind::Type(OaType::Object(_)) => {
+            Jsonb
+        }
+        _ => panic!("Unsupported type: {:#?}", schema)
     };
-    Ok(s)
+    Ok(Some(s))
 }
 
-fn schema_to_columns(schema: &OaSchema, spec: &OpenAPI) -> anyhow::Result<Vec<Column>> {
+fn schema_to_columns(schema: &OaSchema, spec: &OpenAPI, options: &FromOpenApiOptions) -> anyhow::Result<Option<Vec<Column>>> {
     let mut columns = vec![];
-    let props = schema.properties().ok_or(anyhow::anyhow!("No properties"))?;
+    let Some(props) = schema.properties() else {
+        return Ok(None);
+    };
     for (name, prop) in props.into_iter() {
         let prop = prop.resolve(spec);
+        let typ = oaschema_to_sqltype(prop, spec, options)?;
+        let Some(typ) = typ else {
+            continue;
+        };
         let column = Column {
             primary_key: false,
             name: name.to_case(Case::Snake),
-            typ: oaschema_to_sqltype(prop, spec)?,
+            typ,
             nullable: prop.required(&name),
             default: None,
         };
         columns.push(column);
     }
-    Ok(columns)
+    Ok(Some(columns))
 }

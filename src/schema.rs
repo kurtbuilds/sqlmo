@@ -2,6 +2,8 @@
 mod from_postgres;
 #[cfg(feature = "openapi")]
 mod from_openapi;
+#[cfg(feature = "openapi")]
+pub use from_openapi::FromOpenApiOptions;
 mod table;
 mod r#type;
 mod column;

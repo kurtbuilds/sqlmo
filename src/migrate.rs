@@ -62,12 +62,39 @@ pub struct Migration {
     pub debug_results: Vec<DebugResults>,
 }
 
+impl Migration {
+    pub fn is_empty(&self) -> bool {
+        self.statements.is_empty()
+    }
+
+    pub fn set_schema(&mut self, schema_name: &str) {
+        for statement in &mut self.statements {
+            statement.set_schema(schema_name);
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum Statement {
     CreateTable(CreateTable),
     CreateIndex(CreateIndex),
     AlterTable(AlterTable),
+}
+
+impl Statement {
+    pub fn set_schema(&mut self, schema_name: &str) {
+        match self {
+            Statement::CreateTable(ref mut create_table) => {
+                create_table.schema = Some(schema_name.to_string());
+            }
+            Statement::AlterTable(ref mut alter_table) => {
+                alter_table.schema = Some(schema_name.to_string());
+            }
+            Statement::CreateIndex(ref mut create_index) => {
+                create_index.schema = Some(schema_name.to_string());
+            }
+        }
+    }
 }
 
 impl ToSql for Statement {
