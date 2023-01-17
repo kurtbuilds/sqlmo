@@ -1,4 +1,5 @@
 use crate::{Type, ToSql, Dialect};
+use crate::util::SqlExtension;
 
 #[derive(Debug, Clone)]
 pub struct Column {
@@ -12,7 +13,7 @@ pub struct Column {
 
 impl ToSql for Column {
     fn write_sql(&self, buf: &mut String, dialect: Dialect) {
-        buf.push_str(&self.name);
+        buf.push_quoted(&self.name);
         buf.push(' ');
         buf.push_str(&self.typ.to_sql(dialect));
         if !self.nullable {
