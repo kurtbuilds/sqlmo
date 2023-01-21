@@ -1,11 +1,21 @@
 use crate::{Dialect, Select, ToSql};
 use crate::util::SqlExtension;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum OnConflict {
     Ignore,
     Abort,
-    // Replace,
+    /// Only valid for Sqlite, because we
+    Replace,
+
+    /// Only valid for Postgres
+    DoUpdate(ConflictTarget)
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum ConflictTarget {
+    Columns(Vec<String>),
+    ConstraintName(String)
 }
 
 impl Default for OnConflict {
@@ -78,8 +88,27 @@ impl Insert {
         self
     }
 
+    pub fn column(mut self, column: &str) -> Self {
+        self.columns.push(column.to_string());
+        self
+    }
+
     pub fn columns(mut self, columns: &[&str]) -> Self {
         self.columns = columns.iter().map(|c| c.to_string()).collect();
+        self
+    }
+
+    pub fn placeholder_for_each_column(mut self, dialect: Dialect) -> Self {
+        use Dialect::*;
+        let mut placeholders = Vec::new();
+        for i in 0..self.columns.len() {
+            match dialect {
+                Postgres => placeholders.push(format!("${}", i + 1)),
+                Mysql => placeholders.push("?".to_string()),
+                Sqlite => placeholders.push("?".to_string()),
+            }
+        }
+        self.values = Values::Values(vec![placeholders]);
         self
     }
 
@@ -107,6 +136,8 @@ impl ToSql for Insert {
             match self.on_conflict {
                 Ignore => buf.push_str("INSERT OR IGNORE INTO "),
                 Abort => buf.push_str("INSERT OR ABORT INTO "),
+                Replace => buf.push_str("INSERT OR REPLACE INTO "),
+                DoUpdate(_) => panic!("Sqlite does not support ON CONFLICT DO UPDATE"),
             }
         } else {
             buf.push_str("INSERT INTO ");
@@ -124,6 +155,46 @@ impl ToSql for Insert {
         }
         buf.push_str(") VALUES ");
         self.values.write_sql(buf, dialect);
+
+        if dialect == Postgres {
+            match &self.on_conflict {
+                Ignore => buf.push_str(" ON CONFLICT DO NOTHING"),
+                Abort => {},
+                Replace => panic!("Postgres does not support ON CONFLICT REPLACE"),
+                DoUpdate(conflict_target) => {
+                    buf.push_str(" ON CONFLICT ");
+                    match conflict_target {
+                        ConflictTarget::Columns(c) => {
+                            buf.push('(');
+                            let mut first = true;
+                            for column in c {
+                                if !first {
+                                    buf.push_str(", ");
+                                }
+                                buf.push_quoted(column);
+                                first = false;
+                            }
+                            buf.push(')');
+                        }
+                        ConflictTarget::ConstraintName(name) => {
+                            buf.push_str("ON CONSTRAINT ");
+                            buf.push_quoted(name);
+                        }
+                    }
+                    buf.push_str(" DO UPDATE SET ");
+                    let mut first = true;
+                    for column in &self.columns {
+                        if !first {
+                            buf.push_str(", ");
+                        }
+                        buf.push_quoted(column);
+                        buf.push_str(" = EXCLUDED.");
+                        buf.push_quoted(column);
+                        first = false;
+                    }
+                }
+            }
+        }
 
         if !self.returning.is_empty() {
             buf.push_str(" RETURNING ");
@@ -160,5 +231,15 @@ mod tests {
             insert.to_sql(Dialect::Postgres),
             r#"INSERT INTO "foo" ("bar", "baz") VALUES (1, 2), (3, 4) RETURNING "id""#
         );
+    }
+
+    #[test]
+    fn test_placeholders() {
+        let insert = Insert::new("foo")
+            .columns(&["bar", "baz", "qux", "wibble", "wobble", "wubble"])
+            .placeholder_for_each_column(Dialect::Postgres)
+            .on_conflict(OnConflict::DoUpdate(ConflictTarget::Columns(vec!["bar".to_string()])));
+        let expected = r#"INSERT INTO "foo" ("bar", "baz", "qux", "wibble", "wobble", "wubble") VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT ("bar") DO UPDATE SET "bar" = EXCLUDED."bar", "baz" = EXCLUDED."baz", "qux" = EXCLUDED."qux", "wibble" = EXCLUDED."wibble", "wobble" = EXCLUDED."wobble", "wubble" = EXCLUDED."wubble""#;
+        assert_eq!(insert.to_sql(Dialect::Postgres), expected);
     }
 }
