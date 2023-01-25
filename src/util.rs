@@ -1,10 +1,11 @@
 use crate::{Dialect, ToSql};
 
-pub trait SqlExtension {
+pub(crate) trait SqlExtension {
     fn push_quoted<T: AsRef<str>>(&mut self, s: T);
     fn push_table_name(&mut self, schema: &Option<String>, table: &str);
     fn push_sql<T: ToSql>(&mut self, sql: &T, dialect: Dialect);
     fn push_sql_sequence<T: ToSql>(&mut self, sql: &[T], separator: &str, dialect: Dialect);
+    fn push_quoted_sequence(&mut self, sql: &[String], separator: &str);
 }
 
 impl SqlExtension for String {
@@ -39,4 +40,24 @@ impl SqlExtension for String {
             first = false;
         }
     }
+
+    fn push_quoted_sequence(&mut self, sql: &[String], separator: &str) {
+        let mut first = true;
+        for s in sql {
+            if !first {
+                self.push_str(separator);
+            }
+            self.push_quoted(s);
+            first = false;
+        }
+    }
+}
+
+pub fn pkey_column_names(schema: &str) -> Vec<String> {
+    vec![
+        format!("{}_id", schema),
+        format!("{}_uuid", schema),
+        "id".to_string(),
+        "uuid".to_string(),
+    ]
 }

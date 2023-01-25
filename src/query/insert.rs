@@ -12,6 +12,12 @@ pub enum OnConflict {
     DoUpdate(ConflictTarget)
 }
 
+impl OnConflict {
+    pub fn do_update_on_pkey(pkey: &str) -> Self {
+        OnConflict::DoUpdate(ConflictTarget::Columns(vec![pkey.to_string()]))
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum ConflictTarget {
     Columns(Vec<String>),
@@ -144,15 +150,7 @@ impl ToSql for Insert {
         }
         buf.push_table_name(&self.schema, &self.table);
         buf.push_str(" (");
-        let mut first = true;
-        for c in &self.columns {
-            if first {
-                first = false;
-            } else {
-                buf.push_str(", ");
-            }
-            buf.push_quoted(c);
-        }
+        buf.push_quoted_sequence(&self.columns, ", ");
         buf.push_str(") VALUES ");
         self.values.write_sql(buf, dialect);
 
@@ -162,18 +160,13 @@ impl ToSql for Insert {
                 Abort => {},
                 Replace => panic!("Postgres does not support ON CONFLICT REPLACE"),
                 DoUpdate(conflict_target) => {
+                    let mut column_filter = Vec::new();
                     buf.push_str(" ON CONFLICT ");
                     match conflict_target {
                         ConflictTarget::Columns(c) => {
+                            column_filter = c.clone();
                             buf.push('(');
-                            let mut first = true;
-                            for column in c {
-                                if !first {
-                                    buf.push_str(", ");
-                                }
-                                buf.push_quoted(column);
-                                first = false;
-                            }
+                            buf.push_quoted_sequence(c, ", ");
                             buf.push(')');
                         }
                         ConflictTarget::ConstraintName(name) => {
@@ -183,7 +176,7 @@ impl ToSql for Insert {
                     }
                     buf.push_str(" DO UPDATE SET ");
                     let mut first = true;
-                    for column in &self.columns {
+                    for column in self.columns.iter().filter(|c| !column_filter.contains(c)) {
                         if !first {
                             buf.push_str(", ");
                         }
@@ -198,14 +191,7 @@ impl ToSql for Insert {
 
         if !self.returning.is_empty() {
             buf.push_str(" RETURNING ");
-            let mut first = true;
-            for column in &self.returning {
-                if !first {
-                    buf.push_str(", ");
-                }
-                buf.push_quoted(column);
-                first = false;
-            }
+            buf.push_quoted_sequence(&self.returning, ", ");
         }
     }
 }

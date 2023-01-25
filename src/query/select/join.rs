@@ -37,14 +37,7 @@ impl ToSql for Criteria {
             }
             Criteria::Using(columns) => {
                 buf.push_str(" USING (");
-                let mut first = true;
-                for column in columns {
-                    if !first {
-                        buf.push_str(", ");
-                    }
-                    buf.push_quoted(column);
-                    first = false;
-                }
+                buf.push_quoted_sequence(columns, ", ");
                 buf.push(')');
             }
         }

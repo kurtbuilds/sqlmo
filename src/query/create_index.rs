@@ -45,14 +45,7 @@ impl ToSql for CreateIndex {
             IndexType::Brin => buf.push_str("BRIN"),
         }
         buf.push_str(" (");
-        let mut first = true;
-        for column in &self.columns {
-            if !first {
-                buf.push(',');
-            }
-            buf.push_quoted(column);
-            first = false;
-        }
+        buf.push_quoted_sequence(&self.columns, ", ");
         buf.push(')');
     }
 }

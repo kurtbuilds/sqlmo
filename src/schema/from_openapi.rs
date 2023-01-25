@@ -4,6 +4,7 @@ use crate::schema::Type;
 use crate::Schema;
 use crate::schema::column::Column;
 use crate::schema::table::Table;
+use crate::util::pkey_column_names;
 
 #[derive(Debug, Clone)]
 pub struct FromOpenApiOptions {
@@ -26,9 +27,16 @@ impl Schema {
                 !schema_name.ends_with("Response")
             }) {
                 let schema = schema.resolve(&spec);
-                let Some(columns) =  schema_to_columns(&schema, &spec, options)? else {
+                let Some(mut columns) =  schema_to_columns(&schema, &spec, options)? else {
                     continue
                 };
+                let pkey_candidates = pkey_column_names(&schema_name);
+                for col in &mut columns {
+                    if pkey_candidates.contains(&col.name)  {
+                        col.primary_key = true;
+                        break
+                    }
+                }
                 let table = Table {
                     schema: None,
                     name: schema_name.to_case(Case::Snake),

@@ -6,7 +6,7 @@ pub mod migrate;
 pub mod query;
 
 mod to_sql;
-mod util;
+pub mod util;
 
 #[doc(inline)]
 pub use migrate::{Migration, MigrationOptions, migrate};
