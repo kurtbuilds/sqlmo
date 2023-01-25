@@ -225,7 +225,7 @@ mod tests {
             .columns(&["bar", "baz", "qux", "wibble", "wobble", "wubble"])
             .placeholder_for_each_column(Dialect::Postgres)
             .on_conflict(OnConflict::DoUpdate(ConflictTarget::Columns(vec!["bar".to_string()])));
-        let expected = r#"INSERT INTO "foo" ("bar", "baz", "qux", "wibble", "wobble", "wubble") VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT ("bar") DO UPDATE SET "bar" = EXCLUDED."bar", "baz" = EXCLUDED."baz", "qux" = EXCLUDED."qux", "wibble" = EXCLUDED."wibble", "wobble" = EXCLUDED."wobble", "wubble" = EXCLUDED."wubble""#;
+        let expected = r#"INSERT INTO "foo" ("bar", "baz", "qux", "wibble", "wobble", "wubble") VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT ("bar") DO UPDATE SET "baz" = EXCLUDED."baz", "qux" = EXCLUDED."qux", "wibble" = EXCLUDED."wibble", "wobble" = EXCLUDED."wobble", "wubble" = EXCLUDED."wubble""#;
         assert_eq!(insert.to_sql(Dialect::Postgres), expected);
     }
 }
