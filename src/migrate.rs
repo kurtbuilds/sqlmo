@@ -36,7 +36,6 @@ pub fn migrate(current: Schema, desired: Schema, _options: &MigrationOptions) ->
         let mut actions = vec![];
         for desired_column in desired_table.columns.iter() {
             if let Some(current) = current_columns.get(&desired_column.name) {
-                println!("{}.{}: nullable: {} -> {}", name, desired_column.name, current.nullable, desired_column.nullable);
                 if current.nullable != desired_column.nullable {
                     actions.push(AlterAction::set_nullable(desired_column.name.clone(), desired_column.nullable));
                 }

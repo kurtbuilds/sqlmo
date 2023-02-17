@@ -36,8 +36,11 @@ impl FromStr for Type {
 
     fn from_str(s: &str) -> Result<Self> {
         use Type::*;
+        if s.starts_with("numeric") {
+            println!("Parsing type: {}", s);
+        }
         lazy_static! {
-            static ref NUMERIC_RE: Regex = Regex::new(r"numeric\((\d+), (\d+)\)").unwrap();
+            static ref NUMERIC_RE: Regex = Regex::new(r"numeric\((\d+),\s*(\d+)\)").unwrap();
         }
         let cap = NUMERIC_RE.captures(s);
         if let Some(cap) = cap {
@@ -98,6 +101,13 @@ mod test {
 
     #[test]
     fn test_numeric() {
+        let s = "numeric(15, 2)";
+        let t = Type::from_str(s).unwrap();
+        assert_eq!(t, Type::Numeric(15, 2));
+    }
+
+    #[test]
+    fn test_eq() {
         let s = "numeric(15, 2)";
         let t = Type::from_str(s).unwrap();
         assert_eq!(t, Type::Numeric(15, 2));
