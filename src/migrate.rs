@@ -33,20 +33,30 @@ pub fn migrate(current: Schema, desired: Schema, _options: &MigrationOptions) ->
         let current_table = current_tables[name];
         let current_columns = current_table.columns.iter().map(|c| (&c.name, c)).collect::<HashMap<_, _>>();
         // add columns
-        let mut matches = true;
-        for desired_column in desired_table.columns.iter().filter(|c| !current_columns.contains_key(&c.name)) {
-            let statement = Statement::AlterTable(AlterTable {
+        let mut actions = vec![];
+        for desired_column in desired_table.columns.iter() {
+            if let Some(current) = current_columns.get(&desired_column.name) {
+                println!("{}.{}: nullable: {} -> {}", name, desired_column.name, current.nullable, desired_column.nullable);
+                if current.nullable != desired_column.nullable {
+                    actions.push(AlterAction::set_nullable(desired_column.name.clone(), desired_column.nullable));
+                }
+                if current.typ != desired_column.typ {
+                    actions.push(AlterAction::set_type(desired_column.name.clone(), desired_column.typ.clone()));
+                };
+            } else {
+                actions.push(AlterAction::AddColumn {
+                    column: desired_column.clone(),
+                });
+            }
+        }
+        if actions.is_empty() {
+            debug_results.push(DebugResults::TablesIdentical(name.to_string()));
+        } else {
+            statements.push(Statement::AlterTable(AlterTable {
                 schema: desired_table.schema.clone(),
                 name: desired_table.name.clone(),
-                action: AlterAction::AddColumn {
-                    column: desired_column.clone(),
-                },
-            });
-            statements.push(statement);
-            matches = false;
-        }
-        if matches {
-            debug_results.push(DebugResults::TablesIdentical(name.to_string()));
+                actions,
+            }));
         }
     }
 

@@ -1,4 +1,4 @@
-use openapiv3::{OpenAPI, Schema as OaSchema, SchemaKind, Type as OaType};
+use openapiv3::{OpenAPI, Schema as OaSchema, SchemaKind, StringFormat, Type as OaType, VariantOrUnknownOrEmpty};
 use convert_case::{Case, Casing};
 use crate::schema::Type;
 use crate::Schema;
@@ -27,14 +27,14 @@ impl Schema {
                 !schema_name.ends_with("Response")
             }) {
                 let schema = schema.resolve(&spec);
-                let Some(mut columns) =  schema_to_columns(&schema, &spec, options)? else {
-                    continue
+                let Some(mut columns) = schema_to_columns(&schema, &spec, options)? else {
+                    continue;
                 };
                 let pkey_candidates = pkey_column_names(&schema_name);
                 for col in &mut columns {
-                    if pkey_candidates.contains(&col.name)  {
+                    if pkey_candidates.contains(&col.name) {
                         col.primary_key = true;
-                        break
+                        break;
                     }
                 }
                 let table = Table {
@@ -54,18 +54,27 @@ impl Schema {
 
 fn oaschema_to_sqltype(schema: &OaSchema, _: &OpenAPI, options: &FromOpenApiOptions) -> anyhow::Result<Option<Type>> {
     use Type::*;
-    let s = match schema.schema_kind {
-        SchemaKind::Type(OaType::String(_)) => {
-            Text
+    let s = match &schema.schema_kind {
+        SchemaKind::Type(OaType::String(s)) => {
+            match s.format.as_str() {
+                "currency" => Numeric(19, 4),
+                "date" => Date,
+                "date-time" => DateTime,
+                _ => Text,
+            }
         }
         SchemaKind::Type(OaType::Integer(_)) => {
-            Integer
+            let format = schema.schema_data.extensions.get("x-format").and_then(|v| v.as_str());
+            match format {
+                Some("date") => Date,
+                _ => Integer,
+            }
         }
         SchemaKind::Type(OaType::Boolean { .. }) => {
             Boolean
         }
         SchemaKind::Type(OaType::Number(_)) => {
-            Numeric
+            Float64
         }
         SchemaKind::Type(OaType::Array(_)) => {
             if options.include_arrays {
@@ -93,11 +102,22 @@ fn schema_to_columns(schema: &OaSchema, spec: &OpenAPI, options: &FromOpenApiOpt
         let Some(typ) = typ else {
             continue;
         };
+        let mut primary_key = false;
+        if name == "id" {
+            primary_key = true;
+        }
+        let mut nullable = true;
+        if primary_key {
+            nullable = false;
+        }
+        if prop.required(&name) {
+            nullable = false;
+        }
         let column = Column {
-            primary_key: false,
+            primary_key,
             name: name.to_case(Case::Snake),
             typ,
-            nullable: prop.required(&name),
+            nullable,
             default: None,
         };
         columns.push(column);

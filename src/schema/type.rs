@@ -2,7 +2,10 @@ use std::str::FromStr;
 use anyhow::{anyhow, Result};
 use crate::to_sql::{Dialect, ToSql};
 
-#[derive(Debug, Clone, Copy)]
+use lazy_static::lazy_static;
+use regex::Regex;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Type {
     Boolean,
     // integer types
@@ -10,7 +13,8 @@ pub enum Type {
     BigInt,
     Integer,
     // float types
-    Numeric,
+    Float64,
+    Numeric(u8, u8),
     // byte types
     Bytes,
     // date types
@@ -32,6 +36,15 @@ impl FromStr for Type {
 
     fn from_str(s: &str) -> Result<Self> {
         use Type::*;
+        lazy_static! {
+            static ref NUMERIC_RE: Regex = Regex::new(r"numeric\((\d+), (\d+)\)").unwrap();
+        }
+        let cap = NUMERIC_RE.captures(s);
+        if let Some(cap) = cap {
+            let p = cap.get(1).unwrap().as_str().parse()?;
+            let s = cap.get(2).unwrap().as_str().parse()?;
+            return Ok(Numeric(p, s));
+        }
         let s = match s {
             "bigint" => BigInt,
             "boolean" => Boolean,
@@ -42,7 +55,7 @@ impl FromStr for Type {
             "interval" => Duration,
             "json" => Json,
             "jsonb" => Jsonb,
-            "numeric" => Numeric,
+            "numeric" => Float64,
             "uuid" => Uuid,
             "smallint" => SmallInt,
             "text" => Text,
@@ -67,12 +80,26 @@ impl ToSql for Type {
             Duration => "interval",
             Json => "json",
             Jsonb => "jsonb",
-            Numeric => "numeric",
+            Float64 => "numeric",
+            Numeric(p, s) => return buf.push_str(&format!("numeric({}, {})", p, s)),
             SmallInt => "smallint",
             Uuid => "uuid",
             Integer => "integer",
             Text => "character varying",
         };
         buf.push_str(s);
+    }
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_numeric() {
+        let s = "numeric(15, 2)";
+        let t = Type::from_str(s).unwrap();
+        assert_eq!(t, Type::Numeric(15, 2));
     }
 }

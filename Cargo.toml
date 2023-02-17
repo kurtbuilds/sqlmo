@@ -18,6 +18,8 @@ sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] , op
 tokio = { version = "1.22.0", features = ["full"] , optional = true }
 convert_case = "0.6.0"
 serde_yaml = { version = "0.9.14", optional = true }
+regex = "1.7.1"
+lazy_static = "1.4.0"
 
 [features]
 openapi = ["openapiv3-extended", "serde_yaml"]
