@@ -24,3 +24,6 @@ lazy_static = "1.4.0"
 [features]
 openapi = ["openapiv3-extended", "serde_yaml"]
 sqlx = ["dep:sqlx", "tokio"]
+
+[dev-dependencies]
+serde_json = "1.0.93"

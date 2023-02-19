@@ -1,4 +1,4 @@
-use openapiv3::{OpenAPI, Schema as OaSchema, SchemaKind, StringFormat, Type as OaType, VariantOrUnknownOrEmpty};
+use openapiv3::{OpenAPI, Schema as OaSchema, SchemaKind, Type as OaType};
 use convert_case::{Case, Casing};
 use crate::schema::Type;
 use crate::Schema;
@@ -113,6 +113,12 @@ fn schema_to_columns(schema: &OaSchema, spec: &OpenAPI, options: &FromOpenApiOpt
         if prop.required(&name) {
             nullable = false;
         }
+        if prop.schema_data.extensions.get("x-format").and_then(|v| v.as_str()) == Some("date") {
+            nullable = true;
+        }
+        if prop.schema_data.extensions.get("x-null-as-zero").and_then(|v| v.as_bool()).unwrap_or(false) {
+            nullable = true;
+        }
         let column = Column {
             primary_key,
             name: name.to_case(Case::Snake),
@@ -123,4 +129,36 @@ fn schema_to_columns(schema: &OaSchema, spec: &OpenAPI, options: &FromOpenApiOpt
         columns.push(column);
     }
     Ok(Some(columns))
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    #[cfg(feature = "openapi")]
+    fn test_format_date() {
+        use openapiv3 as oa;
+        let mut z = oa::Schema::new_object();
+
+        let mut int_format_date = oa::Schema::new_integer();
+        int_format_date.schema_data.extensions.insert("x-format".to_string(), serde_json::Value::from("date"));
+        z.add_property("date", int_format_date).unwrap();
+
+        let mut int_null_as_zero = oa::Schema::new_integer();
+        int_null_as_zero.schema_data.extensions.insert("x-null-as-zero".to_string(), serde_json::Value::from(true));
+        z.add_property("int_null_as_zero", int_null_as_zero).unwrap();
+
+        let columns = schema_to_columns(&z, &OpenAPI::default(), &FromOpenApiOptions::default()).unwrap().unwrap();
+        assert_eq!(columns.len(), 2);
+
+        let int_format_date = &columns[0];
+        assert_eq!(int_format_date.name, "date");
+        assert_eq!(int_format_date.nullable, true);
+
+        let int_null_as_zero = &columns[1];
+        assert_eq!(int_null_as_zero.name, "int_null_as_zero");
+        assert_eq!(int_null_as_zero.nullable, true);
+    }
 }

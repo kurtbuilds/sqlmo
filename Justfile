@@ -1,4 +1,5 @@
-set dotenv-load := true
+set positional-arguments
+set dotenv-load
 
 help:
     @just --list --unsorted
@@ -6,10 +7,10 @@ help:
 run *ARGS:
     cargo run {{ARGS}}
 
-test:
-    cargo test
-    cargo test --features openapi
-    cargo test --features sqlx
+test *ARGS='':
+    cargo test "$@"
+    cargo test --features openapi "$@"
+    cargo test --features sqlx "$@"
 
 ####
 bootstrap:
