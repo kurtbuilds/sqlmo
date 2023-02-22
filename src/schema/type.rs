@@ -6,6 +6,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Type {
     Boolean,
     // integer types

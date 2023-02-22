@@ -873,6 +873,7 @@ dependencies = [
  "lazy_static",
  "openapiv3-extended",
  "regex",
+ "serde",
  "serde_json",
  "serde_yaml",
  "sqlx",

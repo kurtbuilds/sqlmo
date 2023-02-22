@@ -20,6 +20,7 @@ use crate::migrate::{Migration, migrate, MigrationOptions};
 /// Represents a SQL database schema.
 #[derive(Debug)]
 #[derive(Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Schema {
     pub tables: Vec<Table>,
 }
