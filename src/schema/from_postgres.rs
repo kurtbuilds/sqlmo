@@ -143,6 +143,6 @@ mod test {
             numeric_scale: Some(0),
         };
         let column: Column = c.try_into().unwrap();
-        assert_eq!(column.typ, schema::Type::Integer);
+        assert_eq!(column.typ, schema::Type::I32);
     }
 }

@@ -67,14 +67,14 @@ fn oaschema_to_sqltype(schema: &OaSchema, _: &OpenAPI, options: &FromOpenApiOpti
             let format = schema.schema_data.extensions.get("x-format").and_then(|v| v.as_str());
             match format {
                 Some("date") => Date,
-                _ => Integer,
+                _ => I32,
             }
         }
         SchemaKind::Type(OaType::Boolean { .. }) => {
             Boolean
         }
         SchemaKind::Type(OaType::Number(_)) => {
-            Float64
+            F64
         }
         SchemaKind::Type(OaType::Array(_)) => {
             if options.include_arrays {

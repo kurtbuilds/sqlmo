@@ -59,3 +59,9 @@ async fn main() {
     }
 }
 ```
+
+# Roadmap
+
+- [ ] When calculating migrations, create commented out lines for column deletion
+- [ ] ? When calculating migrations, do alter column by calculating word distance between column names
+

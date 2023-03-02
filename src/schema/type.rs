@@ -4,21 +4,26 @@ use crate::to_sql::{Dialect, ToSql};
 
 use lazy_static::lazy_static;
 use regex::Regex;
+use crate::util::SqlExtension;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Type {
     Boolean,
     // integer types
-    SmallInt,
-    BigInt,
-    Integer,
+    I16,
+    I32,
+    I64,
     // float types
-    Float64,
+    F32,
+    F64,
+    // arbitrary precision types
+    Decimal,
     Numeric(u8, u8),
     // byte types
     Bytes,
     // date types
+    Time,
     Date,
     DateTime,
     NaiveDateTime,
@@ -30,6 +35,9 @@ pub enum Type {
     Uuid,
     // string types
     Text,
+    // Array types
+    Array(Box<Type>),
+    Other(String),
 }
 
 impl FromStr for Type {
@@ -50,7 +58,7 @@ impl FromStr for Type {
             return Ok(Numeric(p, s));
         }
         let s = match s {
-            "bigint" => BigInt,
+            "bigint" => I64,
             "boolean" => Boolean,
             "date" => Date,
             "bytea" => Bytes,
@@ -59,12 +67,12 @@ impl FromStr for Type {
             "interval" => Duration,
             "json" => Json,
             "jsonb" => Jsonb,
-            "numeric" => Float64,
+            "numeric" => F64,
             "uuid" => Uuid,
-            "smallint" => SmallInt,
+            "smallint" => I16,
             "text" => Text,
             "character varying" => Text,
-            "integer" => Integer,
+            "integer" => I32,
             _ => return Err(anyhow!("Unknown type: {}", s)),
         };
         Ok(s)
@@ -72,24 +80,39 @@ impl FromStr for Type {
 }
 
 impl ToSql for Type {
-    fn write_sql(&self, buf: &mut String, _: Dialect) {
+    fn write_sql(&self, buf: &mut String, dialect: Dialect) {
         use self::Type::*;
         let s = match self {
-            BigInt => "bigint",
             Boolean => "boolean",
+            I16 => "smallint",
+            I32 => "integer",
+            I64 => "bigint",
             Bytes => "bytea",
+            Time => "time without time zone",
             Date => "date",
             DateTime => "timestamptz",
             NaiveDateTime => "timestamp without time zone",
             Duration => "interval",
             Json => "json",
             Jsonb => "jsonb",
-            Float64 => "numeric",
-            Numeric(p, s) => return buf.push_str(&format!("numeric({}, {})", p, s)),
-            SmallInt => "smallint",
+            F32 => "real",
+            F64 => "double precision",
+            Decimal => "numeric",
+            Numeric(p, s) => {
+                return buf.push_str(&format!("numeric({}, {})", p, s))
+            },
             Uuid => "uuid",
-            Integer => "integer",
             Text => "character varying",
+            Array(inner) => {
+                buf.push_sql(inner.as_ref(), dialect);
+                if dialect == Dialect::Postgres {
+                    buf.push_str("[]");
+                } else {
+                    buf.push_str(" ARRAY")
+                }
+                return
+            }
+            Other(z) => panic!("Unknown type: {}", z),
         };
         buf.push_str(s);
     }
