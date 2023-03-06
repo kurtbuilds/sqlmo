@@ -2,8 +2,6 @@ use std::str::FromStr;
 use anyhow::{anyhow, Result};
 use crate::to_sql::{Dialect, ToSql};
 
-use lazy_static::lazy_static;
-use regex::Regex;
 use crate::util::SqlExtension;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -45,20 +43,12 @@ impl FromStr for Type {
 
     fn from_str(s: &str) -> Result<Self> {
         use Type::*;
-        if s.starts_with("numeric") {
-            println!("Parsing type: {}", s);
-        }
-        lazy_static! {
-            static ref NUMERIC_RE: Regex = Regex::new(r"numeric\((\d+),\s*(\d+)\)").unwrap();
-        }
-        let cap = NUMERIC_RE.captures(s);
-        if let Some(cap) = cap {
-            let p = cap.get(1).unwrap().as_str().parse()?;
-            let s = cap.get(2).unwrap().as_str().parse()?;
-            return Ok(Numeric(p, s));
-        }
         let s = match s {
+            "numeric" => Decimal,
             "bigint" => I64,
+            "int8" => I64,
+            "double precision" => F64,
+            "bool" => Boolean,
             "boolean" => Boolean,
             "date" => Date,
             "bytea" => Bytes,
@@ -67,12 +57,12 @@ impl FromStr for Type {
             "interval" => Duration,
             "json" => Json,
             "jsonb" => Jsonb,
-            "numeric" => F64,
             "uuid" => Uuid,
             "smallint" => I16,
             "text" => Text,
             "character varying" => Text,
             "integer" => I32,
+            "ARRAY" => panic!("Encountered `ARRAY` type when reading data schema from database. ARRAY must be handled separately."),
             _ => return Err(anyhow!("Unknown type: {}", s)),
         };
         Ok(s)
