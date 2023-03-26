@@ -82,7 +82,7 @@ impl Schema {
                     .map(|c: SchemaColumn| c.try_into())
                     .collect::<Result<Vec<_>, Error>>()?;
                 Ok(Table {
-                    schema: None,
+                    schema: Some(schema_name.to_string()),
                     name: table_name,
                     columns,
                     indexes: vec![],
@@ -97,7 +97,7 @@ impl Schema {
                 continue;
             }
             tables.push(Table {
-                schema: None,
+                schema: Some(schema_name.to_string()),
                 name,
                 columns: vec![],
                 indexes: vec![],
