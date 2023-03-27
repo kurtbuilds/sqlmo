@@ -115,7 +115,7 @@ mod test {
 
     #[test]
     fn test_numeric() {
-        let s = "numeric(15, 2)";
+        let s = "numeric";
         let t = Type::from_str(s).unwrap();
         assert_eq!(t, Type::Decimal);
     }
