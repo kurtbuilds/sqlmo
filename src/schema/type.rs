@@ -61,6 +61,7 @@ impl FromStr for Type {
             "smallint" => I16,
             "text" => Text,
             "character varying" => Text,
+            "varchar" => Text,
             "integer" => I32,
             "ARRAY" => panic!("Encountered `ARRAY` type when reading data schema from database. ARRAY must be handled separately."),
             _ => return Err(anyhow!("Unknown type: {}", s)),
