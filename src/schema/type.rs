@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use anyhow::{anyhow, Result};
+use anyhow::{Result};
 use crate::to_sql::{Dialect, ToSql};
 
 use crate::util::SqlExtension;
@@ -64,7 +64,7 @@ impl FromStr for Type {
             "varchar" => Text,
             "integer" => I32,
             "ARRAY" => panic!("Encountered `ARRAY` type when reading data schema from database. ARRAY must be handled separately."),
-            _ => return Err(anyhow!("Unknown type: {}", s)),
+            s => Other(s.to_string()),
         };
         Ok(s)
     }
