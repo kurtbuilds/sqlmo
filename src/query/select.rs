@@ -69,15 +69,8 @@ impl Select {
         self
     }
 
-    pub fn table_column_with_schema(
-        mut self,
-        schema: Option<&str>,
-        table: &str,
-        column: &str,
-    ) -> Self {
-        self.columns.push(SelectColumn::table_column_with_schema(
-            schema, table, column,
-        ));
+    pub fn table_column_with_schema(mut self, schema: Option<&str>, table: &str, column: &str) -> Self {
+        self.columns.push(SelectColumn::table_column_with_schema(schema, table, column));
         self
     }
 
