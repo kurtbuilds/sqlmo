@@ -65,11 +65,35 @@ impl Join {
         }
     }
 
+    pub fn new_with_schema(schema: Option<&str>, table: &str) -> Self {
+        Self {
+            typ: JoinType::Inner,
+            table: JoinTable::Table {
+                schema: schema.map(|s| s.to_string()),
+                table: table.to_string(),
+            },
+            alias: None,
+            criteria: Criteria::On(Where::And(vec![])),
+        }
+    }
+
     pub fn left(table: &str) -> Self {
         Self {
             typ: JoinType::Left,
             table: JoinTable::Table {
                 schema: None,
+                table: table.to_string(),
+            },
+            alias: None,
+            criteria: Criteria::On(Where::And(vec![])),
+        }
+    }
+
+    pub fn left_with_schema(schema: Option<&str>, table: &str) -> Self {
+        Self {
+            typ: JoinType::Left,
+            table: JoinTable::Table {
+                schema: schema.map(|s| s.to_string()),
                 table: table.to_string(),
             },
             alias: None,
@@ -147,4 +171,14 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_builder_with_schema() {
+        let j = Join::new_with_schema(Some("schema"), "table")
+            .alias("bar")
+            .on_raw("bar.id = parent.bar_id");
+        assert_eq!(
+            j.to_sql(Dialect::Postgres),
+            r#"JOIN "schema"."table" AS bar ON bar.id = parent.bar_id"#
+        );
+    }
 }

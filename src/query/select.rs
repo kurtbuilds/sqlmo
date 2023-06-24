@@ -69,6 +69,18 @@ impl Select {
         self
     }
 
+    pub fn table_column_with_schema(
+        mut self,
+        schema: Option<&str>,
+        table: &str,
+        column: &str,
+    ) -> Self {
+        self.columns.push(SelectColumn::table_column_with_schema(
+            schema, table, column,
+        ));
+        self
+    }
+
     pub fn select_raw(mut self, expression: impl Into<String>) -> Self {
         self.columns.push(SelectColumn {
             expression: SelectExpression::Raw(expression.into()),
@@ -80,6 +92,15 @@ impl Select {
     pub fn from(mut self, table: &str) -> Self {
         self.from = Some(From {
             schema: None,
+            table: table.to_string(),
+            alias: None,
+        });
+        self
+    }
+
+    pub fn from_table_with_schema(mut self, schema: Option<&str>, table: &str) -> Self {
+        self.from = Some(From {
+            schema: schema.map(|s| s.to_string()),
             table: table.to_string(),
             alias: None,
         });
@@ -175,6 +196,17 @@ impl SelectColumn {
         Self {
             expression: SelectExpression::Column {
                 schema: None,
+                table: Some(table.to_string()),
+                column: column.to_string(),
+            },
+            alias: None,
+        }
+    }
+
+    pub fn table_column_with_schema(schema: Option<&str>, table: &str, column: &str) -> Self {
+        Self {
+            expression: SelectExpression::Column {
+                schema: schema.map(|s| s.to_string()),
                 table: Some(table.to_string()),
                 column: column.to_string(),
             },
@@ -385,6 +417,30 @@ mod tests {
         assert_eq!(
             select.to_sql(Dialect::Postgres),
             r#"WITH foo AS (SELECT 1), bar AS (SELECT 1) SELECT id, name FROM "users" JOIN "posts" ON users.id = posts.user_id WHERE 1=1 ORDER BY id ASC, name DESC LIMIT 10 OFFSET 5"#
+        );
+    }
+
+    #[test]
+    fn test_with_schema() {
+        let select = Select::default()
+            .with_raw("foo", "SELECT 1")
+            .with("bar", Select::default().select_raw("1"))
+            .select_raw("id")
+            .select_raw("name")
+            .from_table_with_schema(Some("users_schema"), "users")
+            .join(
+                Join::new_with_schema(Some("posts_schema"), "posts")
+                    .on_raw("users_schema.users.id = posts_schema.posts.user_id"),
+            )
+            .where_raw("1=1")
+            .order_asc("id")
+            .order_desc("name")
+            .limit(10)
+            .offset(5);
+
+        assert_eq!(
+            select.to_sql(Dialect::Postgres),
+            r#"WITH foo AS (SELECT 1), bar AS (SELECT 1) SELECT id, name FROM "users_schema"."users" JOIN "posts_schema"."posts" ON users_schema.users.id = posts_schema.posts.user_id WHERE 1=1 ORDER BY id ASC, name DESC LIMIT 10 OFFSET 5"#
         );
     }
 }
