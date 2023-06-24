@@ -528,6 +528,8 @@ checksum = "b7e5500299e16ebb147ae15a00a942af264cf3688f47923b8fc2cd5858f23ad3"
 [[package]]
 name = "openapiv3-extended"
 version = "2.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf07a12429ed706dfd6cb2e1a497b664b9a3c54d796b5adda101e3cf02a1a7f4"
 dependencies = [
  "anyhow",
  "http",
@@ -850,7 +852,7 @@ dependencies = [
 
 [[package]]
 name = "sqlmo"
-version = "0.11.4"
+version = "0.12.4"
 dependencies = [
  "anyhow",
  "convert_case",
