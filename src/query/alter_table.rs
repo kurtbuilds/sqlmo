@@ -44,6 +44,13 @@ pub struct AlterTable {
 
 impl ToSql for AlterTable {
     fn write_sql(&self, buf: &mut String, dialect: Dialect) {
+        #[cfg(feature = "tracing")]
+        tracing::error_span!("alter-table", table = format!(
+            "{}{}{}",
+            self.schema.as_deref().unwrap_or(""),
+            if self.schema.is_some() { "." } else { "" },
+            self.name
+        ));
         buf.push_str("ALTER TABLE ");
         buf.push_table_name(&self.schema, &self.name);
         buf.push_sql_sequence(&self.actions, ",", dialect);

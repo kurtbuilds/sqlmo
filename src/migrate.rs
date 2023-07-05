@@ -40,10 +40,6 @@ pub fn migrate(current: Schema, desired: Schema, _options: &MigrationOptions) ->
                     actions.push(AlterAction::set_nullable(desired_column.name.clone(), desired_column.nullable));
                 }
                 if current.typ != desired_column.typ {
-                    if matches!(desired_column.typ, crate::Type::Other(_)) {
-                        println!("Skipping alter column {} type {:?} -> {:?}", desired_column.name, current.typ, desired_column.typ);
-                        continue;
-                    }
                     actions.push(AlterAction::set_type(desired_column.name.clone(), desired_column.typ.clone()));
                 };
             } else {
@@ -124,4 +120,12 @@ impl ToSql for Statement {
 #[derive(Debug)]
 pub enum DebugResults {
     TablesIdentical(String)
+}
+
+impl DebugResults {
+    pub fn table_name(&self) -> &str {
+        match self {
+            DebugResults::TablesIdentical(name) => name,
+        }
+    }
 }

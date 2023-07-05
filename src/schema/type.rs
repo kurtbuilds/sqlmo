@@ -90,8 +90,8 @@ impl ToSql for Type {
             F64 => "double precision",
             Decimal => "numeric",
             Numeric(p, s) => {
-                return buf.push_str(&format!("numeric({}, {})", p, s))
-            },
+                return buf.push_str(&format!("numeric({}, {})", p, s));
+            }
             Uuid => "uuid",
             Text => "character varying",
             Array(inner) => {
@@ -101,9 +101,16 @@ impl ToSql for Type {
                 } else {
                     buf.push_str(" ARRAY")
                 }
-                return
+                return;
             }
-            Other(z) => panic!("Unknown type: {}", z),
+            Other(z) => {
+                #[cfg(feature = "tracing")]
+                tracing::warn!(z, "Unknown type. SQL may not be valid.");
+                buf.push_str("/* Unknown type: ");
+                buf.push_str(z);
+                buf.push_str(" */");
+                return;
+            }
         };
         buf.push_str(s);
     }
