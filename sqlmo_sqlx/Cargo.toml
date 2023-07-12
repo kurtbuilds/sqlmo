@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1.22.0", features = ["full"], optional = true }
-sqlmo = { path = ".." }
+sqlmo = { path = "..", version = "0.13" }
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
 anyhow = "1.0.66"
 itertools = "0.10.5"
