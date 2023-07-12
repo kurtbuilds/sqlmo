@@ -1,0 +1,12 @@
+set positional-arguments
+set dotenv-load
+
+test *ARGS='':
+    cargo test "$@"
+
+# bump version. level=patch,minor,major
+version level:
+    cargo set-version --bump {{level}}
+
+publish:
+    cargo publish

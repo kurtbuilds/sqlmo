@@ -1,10 +1,10 @@
-#![cfg(feature = "openapi")]
-
 use std::fs::File;
-use openapiv3::OpenAPI;
+
 use anyhow::Result;
-use sqlmo::{MigrationOptions, Schema, Dialect, ToSql};
-use sqlmo::schema::FromOpenApiOptions;
+use openapiv3::OpenAPI;
+
+use sqlmo::{Dialect, MigrationOptions, Schema, ToSql};
+use sqlmo_openapi::{FromOpenApiOptions, FromOpenApi};
 
 const OPENAPI_YAML_FILEPATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/spec/openapi.yaml");
 

@@ -9,8 +9,11 @@ run *ARGS:
 
 test *ARGS='':
     cargo test "$@"
-    cargo test --features openapi "$@"
-    cargo test --features sqlx "$@"
+
+test-all:
+    just sqlmo_openapi/test
+    just sqlmo_sqlx/test
+    just test
 
 ####
 bootstrap:

@@ -1,10 +1,12 @@
-use openapiv3::{OpenAPI, Schema as OaSchema, SchemaKind, Type as OaType};
 use convert_case::{Case, Casing};
-use crate::schema::Type;
-use crate::Schema;
-use crate::schema::column::Column;
-use crate::schema::table::Table;
-use crate::util::pkey_column_names;
+use sqlmo::{Column, Schema, Table, Type};
+use sqlmo::util::pkey_column_names;
+
+use openapiv3 as oa;
+
+pub trait FromOpenApi: Sized {
+    fn try_from_openapi(spec: openapiv3::OpenAPI, options: &FromOpenApiOptions) -> anyhow::Result<Self>;
+}
 
 #[derive(Debug, Clone)]
 pub struct FromOpenApiOptions {
@@ -19,8 +21,8 @@ impl Default for FromOpenApiOptions {
     }
 }
 
-impl Schema {
-    pub fn try_from_openapi(spec: OpenAPI, options: &FromOpenApiOptions) -> anyhow::Result<Self> {
+impl FromOpenApi for Schema {
+    fn try_from_openapi(spec: oa::OpenAPI, options: &FromOpenApiOptions) -> anyhow::Result<Self> {
         let mut tables = Vec::new();
         if let Some(components) = &spec.components {
             for (schema_name, schema) in components.schemas.iter().filter(|(schema_name, _)| {
@@ -52,10 +54,10 @@ impl Schema {
     }
 }
 
-fn oaschema_to_sqltype(schema: &OaSchema, _: &OpenAPI, options: &FromOpenApiOptions) -> anyhow::Result<Option<Type>> {
-    use Type::*;
+fn oaschema_to_sqltype(schema: &oa::Schema, options: &FromOpenApiOptions) -> anyhow::Result<Option<Type>> {
+    use sqlmo::Type::*;
     let s = match &schema.schema_kind {
-        SchemaKind::Type(OaType::String(s)) => {
+        oa::SchemaKind::Type(oa::Type::String(s)) => {
             match s.format.as_str() {
                 "currency" => Numeric(19, 4),
                 "decimal" => Decimal,
@@ -64,27 +66,27 @@ fn oaschema_to_sqltype(schema: &OaSchema, _: &OpenAPI, options: &FromOpenApiOpti
                 _ => Text,
             }
         }
-        SchemaKind::Type(OaType::Integer(_)) => {
+        oa::SchemaKind::Type(oa::Type::Integer(_)) => {
             let format = schema.schema_data.extensions.get("x-format").and_then(|v| v.as_str());
             match format {
                 Some("date") => Date,
                 _ => I32,
             }
         }
-        SchemaKind::Type(OaType::Boolean { .. }) => {
+        oa::SchemaKind::Type(oa::Type::Boolean { .. }) => {
             Boolean
         }
-        SchemaKind::Type(OaType::Number(_)) => {
+        oa::SchemaKind::Type(oa::Type::Number(_)) => {
             F64
         }
-        SchemaKind::Type(OaType::Array(_)) => {
+        oa::SchemaKind::Type(oa::Type::Array(_)) => {
             if options.include_arrays {
                 Jsonb
             } else {
                 return Ok(None);
             }
         }
-        SchemaKind::Type(OaType::Object(_)) => {
+        oa::SchemaKind::Type(oa::Type::Object(_)) => {
             Jsonb
         }
         _ => panic!("Unsupported type: {:#?}", schema)
@@ -92,14 +94,14 @@ fn oaschema_to_sqltype(schema: &OaSchema, _: &OpenAPI, options: &FromOpenApiOpti
     Ok(Some(s))
 }
 
-fn schema_to_columns(schema: &OaSchema, spec: &OpenAPI, options: &FromOpenApiOptions) -> anyhow::Result<Option<Vec<Column>>> {
+fn schema_to_columns(schema: &oa::Schema, spec: &oa::OpenAPI, options: &FromOpenApiOptions) -> anyhow::Result<Option<Vec<Column>>> {
     let mut columns = vec![];
     let Some(props) = schema.properties() else {
         return Ok(None);
     };
     for (name, prop) in props.into_iter() {
         let prop = prop.resolve(spec);
-        let typ = oaschema_to_sqltype(prop, spec, options)?;
+        let typ = oaschema_to_sqltype(prop, options)?;
         let Some(typ) = typ else {
             continue;
         };
@@ -135,8 +137,11 @@ fn schema_to_columns(schema: &OaSchema, spec: &OpenAPI, options: &FromOpenApiOpt
 
 #[cfg(test)]
 mod test {
-    use openapiv3 as oa;
+    use openapiv3::OpenAPI;
+
     use super::*;
+
+    use openapiv3 as oa;
 
     #[test]
     fn test_format_date() {
@@ -165,11 +170,11 @@ mod test {
     #[test]
     fn test_oasformat() {
         let z = oa::Schema::new_string().with_format("currency");
-        let t = oaschema_to_sqltype(&z, &OpenAPI::default(), &FromOpenApiOptions::default()).unwrap().unwrap();
+        let t = oaschema_to_sqltype(&z, &FromOpenApiOptions::default()).unwrap().unwrap();
         assert_eq!(t, Type::Numeric(19, 4));
 
         let z = oa::Schema::new_string().with_format("decimal");
-        let t = oaschema_to_sqltype(&z, &OpenAPI::default(), &FromOpenApiOptions::default()).unwrap().unwrap();
+        let t = oaschema_to_sqltype(&z, &FromOpenApiOptions::default()).unwrap().unwrap();
         assert_eq!(t, Type::Decimal);
     }
 }

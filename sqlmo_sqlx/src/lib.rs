@@ -2,18 +2,23 @@ use std::str::FromStr;
 use anyhow::{Error, Result};
 use itertools::Itertools;
 use sqlx::PgConnection;
+use async_trait::async_trait;
 
-use crate::{Schema, schema};
-use crate::schema::column::Column;
-use crate::schema::table::Table;
+use sqlmo::{Schema, Column, Table, schema};
 
-const QUERY_COLUMNS: &str = include_str!("from_postgres/query_columns.sql");
-const QUERY_TABLES: &str = include_str!("from_postgres/query_tables.sql");
+const QUERY_COLUMNS: &str = include_str!("sql/query_columns.sql");
+const QUERY_TABLES: &str = include_str!("sql/query_tables.sql");
+
+#[async_trait]
+pub trait FromPostgres: Sized {
+    async fn try_from_postgres(conn: &mut PgConnection, schema_name: &str) -> Result<Self>;
+}
 
 #[derive(sqlx::FromRow)]
-pub struct SchemaColumn {
+struct SchemaColumn {
     pub table_name: String,
     pub column_name: String,
+    #[allow(dead_code)]
     pub ordinal_position: i32,
     pub is_nullable: String,
     pub data_type: String,
@@ -22,7 +27,7 @@ pub struct SchemaColumn {
     pub inner_type: Option<String>,
 }
 
-pub async fn query_schema_columns(conn: &mut PgConnection, schema_name: &str) -> Result<Vec<SchemaColumn>> {
+async fn query_schema_columns(conn: &mut PgConnection, schema_name: &str) -> Result<Vec<SchemaColumn>> {
     let result = sqlx::query_as::<_, SchemaColumn>(QUERY_COLUMNS)
         .bind(schema_name)
         .fetch_all(conn)
@@ -31,12 +36,13 @@ pub async fn query_schema_columns(conn: &mut PgConnection, schema_name: &str) ->
 }
 
 #[derive(sqlx::FromRow)]
-pub struct TableSchema {
+struct TableSchema {
+    #[allow(dead_code)]
     pub table_schema: String,
     pub table_name: String,
 }
 
-pub async fn query_table_names(conn: &mut PgConnection, schema_name: &str) -> Result<Vec<String>> {
+async fn query_table_names(conn: &mut PgConnection, schema_name: &str) -> Result<Vec<String>> {
     let result = sqlx::query_as::<_, TableSchema>(QUERY_TABLES)
         .bind(schema_name)
         .fetch_all(conn)
@@ -71,8 +77,9 @@ impl TryInto<Column> for SchemaColumn {
     }
 }
 
-impl Schema {
-    pub async fn try_from_database(conn: &mut PgConnection, schema_name: &str) -> Result<Schema> {
+#[async_trait]
+impl FromPostgres for Schema {
+    async fn try_from_postgres(conn: &mut PgConnection, schema_name: &str) -> Result<Schema> {
         let column_schemas = query_schema_columns(conn, schema_name).await?;
         let mut tables = column_schemas.into_iter()
             .group_by(|c| c.table_name.clone())

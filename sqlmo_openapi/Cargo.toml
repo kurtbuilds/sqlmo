@@ -1,0 +1,16 @@
+[package]
+name = "sqlmo_openapi"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+openapiv3 = { version = "3", package = "openapiv3-extended" }
+sqlmo = { path = ".." }
+convert_case = "0.6.0"
+anyhow = "1.0.66"
+
+[dev-dependencies]
+serde_yaml = "0.9.14"
+serde_json = "1.0.93"
