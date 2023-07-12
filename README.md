@@ -27,8 +27,8 @@ schemas (`sqlmo::Migration`), and generate SQL to apply the migration (`sqlmo::M
 SQL query. *Note: this library does not support parsing SQL queries (yet).*
 
 For auto-generating migrations, there are a few built-in schema sources:
-- Postgres
-- OpenAPI 3.0 spec
+- **Postgres**: [`sqlmo_sqlx`](./sqlmo_sqlx)
+- **OpenAPI v3**: [`sqlmo_openapi`](./sqlmo_openapi)
 
 If you need another source, you should define a way to build a `sqlmo::Schema` from your data source, then use `sqlmo` 
 to auto-generate migrations.
