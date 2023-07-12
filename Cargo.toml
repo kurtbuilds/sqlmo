@@ -13,7 +13,7 @@ documentation = "https://docs.rs/sqlmo"
 [dependencies]
 anyhow = "1.0.66"
 itertools = "0.10.5"
-openapiv3-extended = { version = "2.0.3", optional = true }
+openapiv3 = { version = "3", optional = true , package = "openapiv3-extended"}
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] , optional = true }
 tokio = { version = "1.22.0", features = ["full"] , optional = true }
 convert_case = "0.6.0"
@@ -24,7 +24,7 @@ tracing = { version = "0.1.37", optional = true }
 [features]
 serde = ["dep:serde"]
 # Enables composing a database spec based on an OpenAPI spec.
-openapi = ["openapiv3-extended", "serde_yaml"]
+openapi = ["openapiv3", "serde_yaml"]
 # Enables readinga database spec from a database connection.
 sqlx = ["dep:sqlx", "tokio"]
 

@@ -58,6 +58,7 @@ fn oaschema_to_sqltype(schema: &OaSchema, _: &OpenAPI, options: &FromOpenApiOpti
         SchemaKind::Type(OaType::String(s)) => {
             match s.format.as_str() {
                 "currency" => Numeric(19, 4),
+                "decimal" => Decimal,
                 "date" => Date,
                 "date-time" => DateTime,
                 _ => Text,
@@ -134,12 +135,11 @@ fn schema_to_columns(schema: &OaSchema, spec: &OpenAPI, options: &FromOpenApiOpt
 
 #[cfg(test)]
 mod test {
+    use openapiv3 as oa;
     use super::*;
 
     #[test]
-    #[cfg(feature = "openapi")]
     fn test_format_date() {
-        use openapiv3 as oa;
         let mut z = oa::Schema::new_object();
 
         let mut int_format_date = oa::Schema::new_integer();
@@ -160,5 +160,16 @@ mod test {
         let int_null_as_zero = &columns[1];
         assert_eq!(int_null_as_zero.name, "int_null_as_zero");
         assert_eq!(int_null_as_zero.nullable, true);
+    }
+
+    #[test]
+    fn test_oasformat() {
+        let z = oa::Schema::new_string().with_format("currency");
+        let t = oaschema_to_sqltype(&z, &OpenAPI::default(), &FromOpenApiOptions::default()).unwrap().unwrap();
+        assert_eq!(t, Type::Numeric(19, 4));
+
+        let z = oa::Schema::new_string().with_format("decimal");
+        let t = oaschema_to_sqltype(&z, &OpenAPI::default(), &FromOpenApiOptions::default()).unwrap().unwrap();
+        assert_eq!(t, Type::Decimal);
     }
 }
