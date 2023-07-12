@@ -45,11 +45,13 @@ This example reads the schema from a postgres database, defines an empty schema 
 and then computes the migration to apply to the database.
 
 ```rust
+use sqlmo_sqlx::FromPostgres;
+
 #[tokio::main]
 async fn main() {
     let url = std::env::var("DATABASE_URL").unwrap();
     let mut conn = sqlx::postgres::PgConnection::connect(&url).await?;
-    let current = Schema::try_from_database(&mut conn, schema_name).await?;
+    let current = Schema::try_from_postgres(&mut conn, schema_name).await?;
     let end_state = Schema::default(); // Load your end-state by manually defining it, or building it from another source
     let migration = current.migrate_to(end_state, &sqlmo::Options::default());
     
@@ -64,4 +66,3 @@ async fn main() {
 
 - [ ] When calculating migrations, create commented out lines for column deletion
 - [ ] ? When calculating migrations, do alter column by calculating word distance between column names
-
