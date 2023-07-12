@@ -10,7 +10,7 @@ repository = "https://github.com/kurtbuilds/sqlmo"
 
 [dependencies]
 openapiv3 = { version = "3", package = "openapiv3-extended" }
-sqlmo = { path = ".." }
+sqlmo = { path = ".." , version = "0.13"}
 convert_case = "0.6.0"
 anyhow = "1.0.66"
 
