@@ -105,9 +105,9 @@ impl Value {
 
     pub fn placeholders(mut self, count: usize, dialect: Dialect) -> Self {
         use Dialect::*;
-        for _ in 0..count {
+        for i in 1..(count + 1) {
             match dialect {
-                Postgres => self.0.push(format!("${}", i + 1)),
+                Postgres => self.0.push(format!("${}", i)),
                 Mysql | Sqlite => self.0.push("?".to_string()),
             }
         }
