@@ -127,14 +127,14 @@ pub enum Values {
     DefaultValues,
 }
 
-impl From<&[&[&str]]> for Values {
-    fn from(values: &[&[&str]]) -> Self {
+impl From<&[&[&'static str]]> for Values {
+    fn from(values: &[&[&'static str]]) -> Self {
         Self::Values(values.into_iter().map(|v| Value::with(v)).collect())
     }
 }
 
-impl From<&[&str]> for Values {
-    fn from(values: &[&str]) -> Self {
+impl From<&[&'static str]> for Values {
+    fn from(values: &[&'static str]) -> Self {
         Self::Values(vec![Value::with(values)])
     }
 }
@@ -209,7 +209,7 @@ impl Insert {
 
     #[deprecated(note = "Use .values(Values::from(...)) instead")]
     pub fn one_value(mut self, values: &[&str]) -> Self {
-        self.values = Values::from(values);
+        self.values = Values::Values(vec![Value::with(values)]);
         self
     }
 

@@ -1,4 +1,5 @@
 use crate::{Type, ToSql, Dialect};
+use crate::query::Expr;
 use crate::util::SqlExtension;
 
 #[derive(Debug, Clone)]
@@ -8,7 +9,7 @@ pub struct Column {
     pub typ: Type,
     pub nullable: bool,
     pub primary_key: bool,
-    pub default: Option<String>,
+    pub default: Option<Expr>,
 }
 
 
@@ -22,6 +23,10 @@ impl ToSql for Column {
         }
         if self.primary_key {
             buf.push_str(" PRIMARY KEY");
+        }
+        if let Some(default) = &self.default {
+            buf.push_str(" DEFAULT ");
+            buf.push_sql(default, dialect);
         }
     }
 }
