@@ -1,6 +1,6 @@
 [package]
 name = "sqlmo_sqlx"
-version = "0.1.0"
+version = "0.14.0"
 edition = "2021"
 description = "Crate to create sqlmo models from sqlx database (currently just postgres)"
 license = "MIT"
@@ -10,7 +10,7 @@ repository = "https://github.com/kurtbuilds/sqlmo"
 
 [dependencies]
 tokio = { version = "1.22.0", features = ["full"], optional = true }
-sqlmo = { path = "..", version = "0.13" }
+sqlmo = { path = "..", version = "0.14" }
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
 anyhow = "1.0.66"
 itertools = "0.10.5"

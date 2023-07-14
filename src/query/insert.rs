@@ -122,6 +122,11 @@ impl From<&[&[&str]]> for Values {
     }
 }
 
+impl From<&[&str]> for Values {
+    fn from(values: &[&str]) -> Self {
+        Self::Values(vec![Value::with(values)])
+    }
+}
 
 impl Values {
     pub fn new_value(value: Value) -> Self {
@@ -176,7 +181,7 @@ impl Insert {
         self
     }
 
-    pub fn value(mut self, value: Values) -> Self {
+    pub fn values(mut self, value: Values) -> Self {
         self.values = value;
         self
     }
@@ -200,8 +205,9 @@ impl Insert {
         self
     }
 
+    #[deprecated(note = "Use .values(Values::from(...)) instead")]
     pub fn one_value(mut self, values: &[&str]) -> Self {
-        self.values = Values::new_value(Value::from(values.iter().map(|v| v.to_string()).collect::<Vec<_>>()));
+        self.values = Values::from(values);
         self
     }
 
@@ -332,7 +338,7 @@ mod tests {
         let insert = Insert::new("users")
             .columns(columns)
             .column("updated_at")
-            .value(Values::new_value(Value::with(&[
+            .values(Values::new_value(Value::with(&[
                 "1", "Kurt", "test@example.com", "NOW()",
             ])))
             .on_conflict(OnConflict::do_update_on_pkey("id")
@@ -350,7 +356,7 @@ ON CONFLICT ("id") DO UPDATE SET
 "users"."email" IS NOT DISTINCT FROM "excluded"."email")
 THEN "users"."updated_at"
 ELSE excluded.updated_at END
-"#.replace("\n", " ").trim();
-        assert_eq!(sql, expected);
+"#.replace("\n", " ");
+        assert_eq!(sql, expected.trim());
     }
 }
