@@ -4,9 +4,11 @@ use crate::util::SqlExtension;
 
 mod cte;
 mod join;
+mod expr;
 
 pub use cte::*;
 pub use join::*;
+pub use expr::*;
 
 /// A SELECT query.
 #[derive(Debug, Clone)]

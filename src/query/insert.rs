@@ -1,4 +1,6 @@
+use std::collections::HashMap;
 use crate::{Dialect, Select, ToSql};
+use crate::query::Expr;
 use crate::util::SqlExtension;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -9,19 +11,42 @@ pub enum OnConflict {
     Replace,
 
     /// Only valid for Postgres
-    DoUpdate(ConflictTarget)
+    DoUpdate {
+        target: ConflictTarget,
+        alternate_values: HashMap<String, Expr>,
+    },
 }
 
 impl OnConflict {
+    pub fn do_update(columns: &[&str]) -> Self {
+        OnConflict::DoUpdate {
+            target: ConflictTarget::Columns(columns.iter().map(|c| c.to_string()).collect()),
+            alternate_values: HashMap::new(),
+        }
+    }
+
     pub fn do_update_on_pkey(pkey: &str) -> Self {
-        OnConflict::DoUpdate(ConflictTarget::Columns(vec![pkey.to_string()]))
+        OnConflict::DoUpdate {
+            target: ConflictTarget::Columns(vec![pkey.to_string()]),
+            alternate_values: HashMap::new(),
+        }
+    }
+
+    pub fn alternate_value<V: Into<Expr>>(mut self, column: &str, value: V) -> Self {
+        match &mut self {
+            OnConflict::DoUpdate { alternate_values, .. } => {
+                alternate_values.insert(column.to_string(), value.into());
+            }
+            _ => panic!("alternate_value is only valid for DoUpdate"),
+        }
+        self
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ConflictTarget {
     Columns(Vec<String>),
-    ConstraintName(String)
+    ConstraintName(String),
 }
 
 impl Default for OnConflict {
@@ -41,7 +66,7 @@ impl ToSql for Values {
                     }
                     let mut first = true;
                     buf.push('(');
-                    for v in value {
+                    for v in &value.0 {
                         if !first {
                             buf.push_str(", ");
                         }
@@ -62,10 +87,62 @@ impl ToSql for Values {
     }
 }
 
+pub struct Value(Vec<String>);
+
+impl Value {
+    pub fn with(values: &[&str]) -> Self {
+        Self(values.into_iter().map(|v| v.to_string()).collect())
+    }
+
+    pub fn new() -> Self {
+        Self(Vec::new())
+    }
+
+    pub fn column(mut self, value: &str) -> Self {
+        self.0.push(value.to_string());
+        self
+    }
+}
+
+impl From<Vec<String>> for Value {
+    fn from(values: Vec<String>) -> Self {
+        Self(values)
+    }
+}
+
 pub enum Values {
-    Values(Vec<Vec<String>>),
+    Values(Vec<Value>),
     Select(Select),
     DefaultValues,
+}
+
+impl From<&[&[&str]]> for Values {
+    fn from(values: &[&[&str]]) -> Self {
+        Self::Values(values.into_iter().map(|v| Value::with(v)).collect())
+    }
+}
+
+
+impl Values {
+    pub fn new_value(value: Value) -> Self {
+        Self::Values(vec![value])
+    }
+
+    pub fn select(select: Select) -> Self {
+        Self::Select(select)
+    }
+
+    pub fn default_values() -> Self {
+        Self::DefaultValues
+    }
+
+    pub fn value(mut self, value: Value) -> Self {
+        match &mut self {
+            Self::Values(values) => values.push(value),
+            _ => panic!("Cannot add value to non-values"),
+        }
+        self
+    }
 }
 
 pub struct Insert {
@@ -99,6 +176,11 @@ impl Insert {
         self
     }
 
+    pub fn value(mut self, value: Values) -> Self {
+        self.values = value;
+        self
+    }
+
     pub fn columns(mut self, columns: &[&str]) -> Self {
         self.columns = columns.iter().map(|c| c.to_string()).collect();
         self
@@ -114,12 +196,12 @@ impl Insert {
                 Sqlite => placeholders.push("?".to_string()),
             }
         }
-        self.values = Values::Values(vec![placeholders]);
+        self.values = Values::new_value(Value::from(placeholders));
         self
     }
 
     pub fn one_value(mut self, values: &[&str]) -> Self {
-        self.values = Values::Values(vec![values.iter().map(|v| v.to_string()).collect()]);
+        self.values = Values::new_value(Value::from(values.iter().map(|v| v.to_string()).collect::<Vec<_>>()));
         self
     }
 
@@ -143,7 +225,7 @@ impl ToSql for Insert {
                 Ignore => buf.push_str("INSERT OR IGNORE INTO "),
                 Abort => buf.push_str("INSERT OR ABORT INTO "),
                 Replace => buf.push_str("INSERT OR REPLACE INTO "),
-                DoUpdate(_) => panic!("Sqlite does not support ON CONFLICT DO UPDATE"),
+                DoUpdate { .. } => panic!("Sqlite does not support ON CONFLICT DO UPDATE"),
             }
         } else {
             buf.push_str("INSERT INTO ");
@@ -157,12 +239,12 @@ impl ToSql for Insert {
         if dialect == Postgres {
             match &self.on_conflict {
                 Ignore => buf.push_str(" ON CONFLICT DO NOTHING"),
-                Abort => {},
+                Abort => {}
                 Replace => panic!("Postgres does not support ON CONFLICT REPLACE"),
-                DoUpdate(conflict_target) => {
+                DoUpdate { target, alternate_values } => {
                     let mut column_filter = Vec::new();
                     buf.push_str(" ON CONFLICT ");
-                    match conflict_target {
+                    match target {
                         ConflictTarget::Columns(c) => {
                             column_filter = c.clone();
                             buf.push('(');
@@ -181,8 +263,13 @@ impl ToSql for Insert {
                             buf.push_str(", ");
                         }
                         buf.push_quoted(column);
-                        buf.push_str(" = EXCLUDED.");
-                        buf.push_quoted(column);
+                        buf.push_str(" = ");
+                        if let Some(alternate_value) = alternate_values.get(column) {
+                            buf.push_sql(alternate_value, dialect);
+                        } else {
+                            buf.push_str("EXCLUDED.");
+                            buf.push_quoted(column);
+                        }
                         first = false;
                     }
                 }
@@ -198,6 +285,7 @@ impl ToSql for Insert {
 
 #[cfg(test)]
 mod tests {
+    use crate::query::{Case, Expr};
     use super::*;
 
     #[test]
@@ -206,10 +294,10 @@ mod tests {
             schema: None,
             table: "foo".to_string(),
             columns: vec!["bar".to_string(), "baz".to_string()],
-            values: Values::Values(vec![
-                vec!["1".to_string(), "2".to_string()],
-                vec!["3".to_string(), "4".to_string()],
-            ]),
+            values: Values::from(&[
+                &["1", "2"] as &[&str],
+                &["3", "4"],
+            ] as &[&[&str]]),
             on_conflict: OnConflict::Abort,
             returning: vec!["id".to_string()],
         };
@@ -224,8 +312,45 @@ mod tests {
         let insert = Insert::new("foo")
             .columns(&["bar", "baz", "qux", "wibble", "wobble", "wubble"])
             .placeholder_for_each_column(Dialect::Postgres)
-            .on_conflict(OnConflict::DoUpdate(ConflictTarget::Columns(vec!["bar".to_string()])));
+            .on_conflict(OnConflict::do_update(&["bar"]));
         let expected = r#"INSERT INTO "foo" ("bar", "baz", "qux", "wibble", "wobble", "wubble") VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT ("bar") DO UPDATE SET "baz" = EXCLUDED."baz", "qux" = EXCLUDED."qux", "wibble" = EXCLUDED."wibble", "wobble" = EXCLUDED."wobble", "wubble" = EXCLUDED."wubble""#;
         assert_eq!(insert.to_sql(Dialect::Postgres), expected);
+    }
+
+    #[test]
+    fn test_override() {
+        let columns = &["id", "name", "email"];
+
+        let update_conditional = columns.iter().map(|&c| {
+            Expr::not_distinct_from(Expr::table_column("users", c), Expr::table_column("excluded", c))
+        }).collect::<Vec<_>>();
+        let on_conflict_update_value = Expr::case(
+            Case::new_when(Expr::new_and(update_conditional), Expr::table_column("users", "updated_at"))
+                .els("excluded.updated_at")
+        );
+
+        let insert = Insert::new("users")
+            .columns(columns)
+            .column("updated_at")
+            .value(Values::new_value(Value::with(&[
+                "1", "Kurt", "test@example.com", "NOW()",
+            ])))
+            .on_conflict(OnConflict::do_update_on_pkey("id")
+                .alternate_value("updated_at", on_conflict_update_value));
+        let sql = insert.to_sql(Dialect::Postgres);
+        let expected = r#"
+INSERT INTO "users" ("id", "name", "email", "updated_at") VALUES
+(1, Kurt, test@example.com, NOW())
+ON CONFLICT ("id") DO UPDATE SET
+"name" = EXCLUDED."name",
+"email" = EXCLUDED."email",
+"updated_at" = CASE WHEN
+("users"."id" IS NOT DISTINCT FROM "excluded"."id" AND
+"users"."name" IS NOT DISTINCT FROM "excluded"."name" AND
+"users"."email" IS NOT DISTINCT FROM "excluded"."email")
+THEN "users"."updated_at"
+ELSE excluded.updated_at END
+"#.replace("\n", " ").trim();
+        assert_eq!(sql, expected);
     }
 }
