@@ -102,6 +102,17 @@ impl Value {
         self.0.push(value.to_string());
         self
     }
+
+    pub fn placeholders(mut self, count: usize, dialect: Dialect) -> Self {
+        use Dialect::*;
+        for _ in 0..count {
+            match dialect {
+                Postgres => self.0.push(format!("${}", i + 1)),
+                Mysql | Sqlite => self.0.push("?".to_string()),
+            }
+        }
+        self
+    }
 }
 
 impl From<Vec<String>> for Value {
@@ -192,16 +203,7 @@ impl Insert {
     }
 
     pub fn placeholder_for_each_column(mut self, dialect: Dialect) -> Self {
-        use Dialect::*;
-        let mut placeholders = Vec::new();
-        for i in 0..self.columns.len() {
-            match dialect {
-                Postgres => placeholders.push(format!("${}", i + 1)),
-                Mysql => placeholders.push("?".to_string()),
-                Sqlite => placeholders.push("?".to_string()),
-            }
-        }
-        self.values = Values::new_value(Value::from(placeholders));
+        self.values = Values::new_value(Value::new().placeholders(self.columns.len(), dialect));
         self
     }
 
