@@ -42,3 +42,7 @@ publish:
 patch: test
     just version patch
     just publish
+
+publish-all:
+    just sqlmo_sqlx/publish
+    just sqlmo_openapi/publish
