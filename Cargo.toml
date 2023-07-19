@@ -17,6 +17,6 @@ documentation = "https://docs.rs/sqlmo"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.66"
-serde = { version = "1.0.130", features = ["derive"], optional = true }
+anyhow = "1.0.72"
+serde = { version = "1.0.171", features = ["derive"], optional = true }
 tracing = { version = "0.1.37", optional = true }

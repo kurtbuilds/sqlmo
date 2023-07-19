@@ -9,9 +9,9 @@ repository = "https://github.com/kurtbuilds/sqlmo"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1.22.0", features = ["full"], optional = true }
+tokio = { version = "1.29.1", features = ["full"], optional = true }
 sqlmo = { path = "..", version = "0.14" }
-sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
-anyhow = "1.0.66"
+sqlx = { version = "0.7.1", features = ["runtime-tokio-rustls", "postgres"] }
+anyhow = "1.0.72"
 itertools = "0.10.5"
 async-trait = "0.1.71"
