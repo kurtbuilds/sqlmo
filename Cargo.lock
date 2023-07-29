@@ -1190,7 +1190,7 @@ dependencies = [
 
 [[package]]
 name = "sqlmo"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "anyhow",
  "serde",
@@ -1199,7 +1199,7 @@ dependencies = [
 
 [[package]]
 name = "sqlmo_openapi"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "anyhow",
  "convert_case",
@@ -1211,7 +1211,7 @@ dependencies = [
 
 [[package]]
 name = "sqlmo_sqlx"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "anyhow",
  "async-trait",
