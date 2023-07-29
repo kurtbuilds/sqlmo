@@ -1166,7 +1166,7 @@ dependencies = [
 
 [[package]]
 name = "sqlmo"
-version = "0.16.1"
+version = "0.16.2"
 dependencies = [
  "anyhow",
  "serde",
