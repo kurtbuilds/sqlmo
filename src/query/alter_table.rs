@@ -3,7 +3,10 @@ use crate::util::SqlExtension;
 
 #[derive(Debug)]
 pub enum AlterColumnAction {
-    SetType(Type),
+    SetType {
+        typ: Type,
+        using: Option<String>,
+    },
     SetNullable(bool),
 }
 
@@ -30,7 +33,10 @@ impl AlterAction {
     pub fn set_type(name: String, typ: Type) -> Self {
         Self::AlterColumn {
             name,
-            action: AlterColumnAction::SetType(typ),
+            action: AlterColumnAction::SetType {
+                typ,
+                using: None,
+            },
         }
     }
 }
@@ -70,13 +76,17 @@ impl ToSql for AlterAction {
                 buf.push_str(" ALTER COLUMN ");
                 buf.push_quoted(name);
                 match action {
-                    SetType(ty) => {
+                    SetType { typ, using } => {
                         buf.push_str(" TYPE ");
-                        buf.push_sql(ty, dialect);
+                        buf.push_sql(typ, dialect);
                         buf.push_str(" USING ");
-                        buf.push_quoted(name);
-                        buf.push_str("::");
-                        buf.push_sql(ty, dialect);
+                        if let Some(using) = using {
+                            buf.push_str(&using)
+                        } else {
+                            buf.push_quoted(name);
+                            buf.push_str("::");
+                            buf.push_sql(typ, dialect);
+                        }
                     }
                     SetNullable(nullable) => {
                         if *nullable {
@@ -88,5 +98,37 @@ impl ToSql for AlterAction {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_alter_action() {
+        let alter = AlterAction::AlterColumn {
+            name: "foo".to_string(),
+            action: AlterColumnAction::SetType {
+                typ: Type::Text,
+                using: None,
+            },
+        };
+        assert_eq!(
+            alter.to_sql(Dialect::Postgres),
+            r#" ALTER COLUMN "foo" TYPE character varying USING "foo"::character varying"#
+        );
+
+        let alter = AlterAction::AlterColumn {
+            name: "foo".to_string(),
+            action: AlterColumnAction::SetType {
+                typ: Type::Text,
+                using: Some("SUBSTRING(foo, 1, 3)".to_string()),
+            },
+        };
+        assert_eq!(
+            alter.to_sql(Dialect::Postgres),
+            r#" ALTER COLUMN "foo" TYPE character varying USING SUBSTRING(foo, 1, 3)"#
+        );
     }
 }
