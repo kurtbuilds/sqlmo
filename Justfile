@@ -8,7 +8,7 @@ run *ARGS:
     cargo run {{ARGS}}
 
 test *ARGS='':
-    cargo test "$@"
+    cargo test --all-features "$@"
 
 test-all:
     just sqlmo_openapi/test
