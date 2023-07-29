@@ -1,7 +1,7 @@
 use crate::schema::index::Index;
 use crate::schema::column::Column;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Table {
     pub schema: Option<String>,
