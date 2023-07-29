@@ -83,7 +83,7 @@ impl Migration {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Statement {
     CreateTable(CreateTable),
     CreateIndex(CreateIndex),
@@ -102,6 +102,14 @@ impl Statement {
             Statement::CreateIndex(ref mut create_index) => {
                 create_index.schema = Some(schema_name.to_string());
             }
+        }
+    }
+
+    pub fn table_name(&self) -> &str {
+        match self {
+            Statement::CreateTable(create_table) => &create_table.name,
+            Statement::AlterTable(alter_table) => &alter_table.name,
+            Statement::CreateIndex(create_index) => &create_index.table,
         }
     }
 }

@@ -17,7 +17,7 @@ impl Default for IndexType {
 }
 
 /// Create index action for a table
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CreateIndex {
     pub name: String,
     pub unique: bool,
