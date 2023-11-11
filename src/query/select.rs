@@ -1,12 +1,10 @@
-use cte::{Cte, CteQuery};
+use crate::query::{Cte, CteQuery};
 use crate::{Dialect, ToSql};
 use crate::util::SqlExtension;
 
-mod cte;
 mod join;
 mod expr;
 
-pub use cte::*;
 pub use join::*;
 pub use expr::*;
 
@@ -256,6 +254,10 @@ impl Where {
             Or(v) => v.is_empty(),
             Raw(s) => s.is_empty(),
         }
+    }
+
+    pub fn raw(s: impl Into<String>) -> Self {
+        Where::Raw(s.into())
     }
 }
 

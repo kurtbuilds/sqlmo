@@ -2,7 +2,7 @@ use std::collections::{HashMap};
 
 
 use anyhow::Result;
-use crate::query::AlterTable;
+use crate::query::{AlterTable, Update};
 
 use crate::query::AlterAction;
 use crate::query::CreateIndex;
@@ -43,9 +43,34 @@ pub fn migrate(current: Schema, desired: Schema, _options: &MigrationOptions) ->
                     actions.push(AlterAction::set_type(desired_column.name.clone(), desired_column.typ.clone()));
                 };
             } else {
-                actions.push(AlterAction::AddColumn {
-                    column: desired_column.clone(),
-                });
+                // add the column can be in 1 step if the column is nullable
+                if desired_column.nullable {
+                    actions.push(AlterAction::AddColumn {
+                        column: desired_column.clone(),
+                    });
+                } else {
+                    let mut nullable = desired_column.clone();
+                    nullable.nullable = true;
+                    statements.push(Statement::AlterTable(AlterTable {
+                        schema: desired_table.schema.clone(),
+                        name: desired_table.name.clone(),
+                        actions: vec![AlterAction::AddColumn {
+                            column: nullable,
+                        }],
+                    }));
+                    statements.push(Statement::Update(Update::new(name)
+                        .set(&desired_column.name, "/* TODO set a value before setting the column to null */")
+                        .where_(crate::query::Where::raw("true"))
+                    ));
+                    statements.push(Statement::AlterTable(AlterTable {
+                        schema: desired_table.schema.clone(),
+                        name: desired_table.name.clone(),
+                        actions: vec![AlterAction::AlterColumn {
+                            name: desired_column.name.clone(),
+                            action: crate::query::AlterColumnAction::SetNullable(false),
+                        }],
+                    }));
+                }
             }
         }
         if actions.is_empty() {
@@ -88,28 +113,33 @@ pub enum Statement {
     CreateTable(CreateTable),
     CreateIndex(CreateIndex),
     AlterTable(AlterTable),
+    Update(Update),
 }
 
 impl Statement {
     pub fn set_schema(&mut self, schema_name: &str) {
         match self {
-            Statement::CreateTable(ref mut create_table) => {
-                create_table.schema = Some(schema_name.to_string());
+            Statement::CreateTable(s) => {
+                s.schema = Some(schema_name.to_string());
             }
-            Statement::AlterTable(ref mut alter_table) => {
-                alter_table.schema = Some(schema_name.to_string());
+            Statement::AlterTable(s) => {
+                s.schema = Some(schema_name.to_string());
             }
-            Statement::CreateIndex(ref mut create_index) => {
-                create_index.schema = Some(schema_name.to_string());
+            Statement::CreateIndex(s) => {
+                s.schema = Some(schema_name.to_string());
+            }
+            Statement::Update(s) => {
+                s.schema = Some(schema_name.to_string());
             }
         }
     }
 
     pub fn table_name(&self) -> &str {
         match self {
-            Statement::CreateTable(create_table) => &create_table.name,
-            Statement::AlterTable(alter_table) => &alter_table.name,
-            Statement::CreateIndex(create_index) => &create_index.table,
+            Statement::CreateTable(s) => &s.name,
+            Statement::AlterTable(s) => &s.name,
+            Statement::CreateIndex(s) => &s.table,
+            Statement::Update(s) => &s.table
         }
     }
 }
@@ -121,6 +151,7 @@ impl ToSql for Statement {
             CreateTable(c) => c.write_sql(buf, dialect),
             CreateIndex(c) => c.write_sql(buf, dialect),
             AlterTable(a) => a.write_sql(buf, dialect),
+            Update(u) => u.write_sql(buf, dialect),
         }
     }
 }
