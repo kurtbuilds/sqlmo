@@ -1,6 +1,6 @@
 [package]
 name = "sqlmo_openapi"
-version = "0.16.1"
+version = "0.16.2"
 edition = "2021"
 description = "Crate to create sqlmo models from openapi v3 spec"
 license = "MIT"
