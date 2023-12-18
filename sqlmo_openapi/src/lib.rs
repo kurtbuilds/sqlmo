@@ -11,12 +11,14 @@ pub trait FromOpenApi: Sized {
 #[derive(Debug, Clone)]
 pub struct FromOpenApiOptions {
     pub include_arrays: bool,
+    pub include_schemas: Vec<String>,
 }
 
 impl Default for FromOpenApiOptions {
     fn default() -> Self {
         Self {
             include_arrays: false,
+            include_schemas: vec![],
         }
     }
 }
@@ -26,7 +28,13 @@ impl FromOpenApi for Schema {
         let mut tables = Vec::new();
         if let Some(components) = &spec.components {
             for (schema_name, schema) in components.schemas.iter().filter(|(schema_name, _)| {
-                !schema_name.ends_with("Response")
+                if options.include_schemas.contains(schema_name) {
+                    true
+                } else if schema_name.ends_with("Response") {
+                    false
+                } else {
+                    true
+                }
             }) {
                 let schema = schema.resolve(&spec);
                 let Some(mut columns) = schema_to_columns(&schema, &spec, options)? else {
@@ -124,7 +132,7 @@ fn schema_to_columns(schema: &oa::Schema, spec: &oa::OpenAPI, options: &FromOpen
         }
         let column = Column {
             primary_key,
-            name: name.to_case(Case::Snake),
+            name: name.clone(),
             typ,
             nullable,
             default: None,
