@@ -70,7 +70,7 @@ fn oaschema_to_sqltype(schema: &oa::Schema, options: &FromOpenApiOptions) -> any
             let format = schema.schema_data.extensions.get("x-format").and_then(|v| v.as_str());
             match format {
                 Some("date") => Date,
-                _ => I32,
+                _ => I64,
             }
         }
         oa::SchemaKind::Type(oa::Type::Boolean { .. }) => {
