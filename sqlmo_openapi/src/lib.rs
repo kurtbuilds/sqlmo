@@ -26,35 +26,33 @@ impl Default for FromOpenApiOptions {
 impl FromOpenApi for Schema {
     fn try_from_openapi(spec: oa::OpenAPI, options: &FromOpenApiOptions) -> anyhow::Result<Self> {
         let mut tables = Vec::new();
-        if let Some(components) = &spec.components {
-            for (schema_name, schema) in components.schemas.iter().filter(|(schema_name, _)| {
-                if options.include_schemas.contains(schema_name) {
-                    true
-                } else if schema_name.ends_with("Response") {
-                    false
-                } else {
-                    true
-                }
-            }) {
-                let schema = schema.resolve(&spec);
-                let Some(mut columns) = schema_to_columns(&schema, &spec, options)? else {
-                    continue;
-                };
-                let pkey_candidates = pkey_column_names(&schema_name);
-                for col in &mut columns {
-                    if pkey_candidates.contains(&col.name) {
-                        col.primary_key = true;
-                        break;
-                    }
-                }
-                let table = Table {
-                    schema: None,
-                    name: schema_name.to_case(Case::Snake),
-                    columns,
-                    indexes: vec![],
-                };
-                tables.push(table);
+        for (schema_name, schema) in spec.schemas.iter().filter(|(schema_name, _)| {
+            if options.include_schemas.contains(schema_name) {
+                true
+            } else if schema_name.ends_with("Response") {
+                false
+            } else {
+                true
             }
+        }) {
+            let schema = schema.resolve(&spec);
+            let Some(mut columns) = schema_to_columns(&schema, &spec, options)? else {
+                continue;
+            };
+            let pkey_candidates = pkey_column_names(&schema_name);
+            for col in &mut columns {
+                if pkey_candidates.contains(&col.name) {
+                    col.primary_key = true;
+                    break;
+                }
+            }
+            let table = Table {
+                schema: None,
+                name: schema_name.to_case(Case::Snake),
+                columns,
+                indexes: vec![],
+            };
+            tables.push(table);
         }
         Ok(Schema {
             tables,
@@ -64,7 +62,7 @@ impl FromOpenApi for Schema {
 
 fn oaschema_to_sqltype(schema: &oa::Schema, options: &FromOpenApiOptions) -> anyhow::Result<Option<Type>> {
     use sqlmo::Type::*;
-    let s = match &schema.schema_kind {
+    let s = match &schema.kind {
         oa::SchemaKind::Type(oa::Type::String(s)) => {
             match s.format.as_str() {
                 "currency" => Numeric(19, 4),
@@ -75,7 +73,7 @@ fn oaschema_to_sqltype(schema: &oa::Schema, options: &FromOpenApiOptions) -> any
             }
         }
         oa::SchemaKind::Type(oa::Type::Integer(_)) => {
-            let format = schema.schema_data.extensions.get("x-format").and_then(|v| v.as_str());
+            let format = schema.data.extensions.get("x-format").and_then(|v| v.as_str());
             match format {
                 Some("date") => Date,
                 _ => I64,
@@ -124,10 +122,10 @@ fn schema_to_columns(schema: &oa::Schema, spec: &oa::OpenAPI, options: &FromOpen
         if prop.required(&name) {
             nullable = false;
         }
-        if prop.schema_data.extensions.get("x-format").and_then(|v| v.as_str()) == Some("date") {
+        if prop.data.extensions.get("x-format").and_then(|v| v.as_str()) == Some("date") {
             nullable = true;
         }
-        if prop.schema_data.extensions.get("x-null-as-zero").and_then(|v| v.as_bool()).unwrap_or(false) {
+        if prop.data.extensions.get("x-null-as-zero").and_then(|v| v.as_bool()).unwrap_or(false) {
             nullable = true;
         }
         let column = Column {
@@ -156,12 +154,12 @@ mod test {
         let mut z = oa::Schema::new_object();
 
         let mut int_format_date = oa::Schema::new_integer();
-        int_format_date.schema_data.extensions.insert("x-format".to_string(), serde_json::Value::from("date"));
-        z.add_property("date", int_format_date).unwrap();
+        int_format_date.data.extensions.insert("x-format".to_string(), serde_json::Value::from("date"));
+        z.add_property("date", int_format_date);
 
         let mut int_null_as_zero = oa::Schema::new_integer();
-        int_null_as_zero.schema_data.extensions.insert("x-null-as-zero".to_string(), serde_json::Value::from(true));
-        z.add_property("int_null_as_zero", int_null_as_zero).unwrap();
+        int_null_as_zero.data.extensions.insert("x-null-as-zero".to_string(), serde_json::Value::from(true));
+        z.add_property("int_null_as_zero", int_null_as_zero);
 
         let columns = schema_to_columns(&z, &OpenAPI::default(), &FromOpenApiOptions::default()).unwrap().unwrap();
         assert_eq!(columns.len(), 2);
