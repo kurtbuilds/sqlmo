@@ -102,7 +102,7 @@ fn oaschema_to_sqltype(schema: &oa::Schema, options: &FromOpenApiOptions) -> any
 
 fn schema_to_columns(schema: &oa::Schema, spec: &oa::OpenAPI, options: &FromOpenApiOptions) -> anyhow::Result<Option<Vec<Column>>> {
     let mut columns = vec![];
-    let Some(props) = schema.properties() else {
+    let Some(props) = schema.get_properties() else {
         return Ok(None);
     };
     for (name, prop) in props.into_iter() {
