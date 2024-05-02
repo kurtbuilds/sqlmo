@@ -47,6 +47,7 @@ impl OnConflict {
 pub enum ConflictTarget {
     Columns(Vec<String>),
     ConstraintName(String),
+    NoTarget,
 }
 
 impl Default for OnConflict {
@@ -263,6 +264,7 @@ impl ToSql for Insert {
                             buf.push_str("ON CONSTRAINT ");
                             buf.push_quoted(name);
                         }
+                        ConflictTarget::NoTarget => {}
                     }
                     buf.push_str(" DO UPDATE SET ");
                     let mut first = true;
