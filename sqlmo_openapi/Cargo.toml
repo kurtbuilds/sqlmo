@@ -9,7 +9,7 @@ repository = "https://github.com/kurtbuilds/sqlmo"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-openapiv3 = { version = "4", package = "openapiv3-extended" }
+openapiv3 = { version = "6", package = "openapiv3-extended" }
 sqlmo = { path = ".." , version = "0.16" }
 convert_case = "0.6.0"
 anyhow = "1.0.72"
