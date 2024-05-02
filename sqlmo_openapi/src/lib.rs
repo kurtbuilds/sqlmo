@@ -119,7 +119,7 @@ fn schema_to_columns(schema: &oa::Schema, spec: &oa::OpenAPI, options: &FromOpen
         if primary_key {
             nullable = false;
         }
-        if prop.required(&name) {
+        if prop.is_required(&name) {
             nullable = false;
         }
         if prop.data.extensions.get("x-format").and_then(|v| v.as_str()) == Some("date") {
