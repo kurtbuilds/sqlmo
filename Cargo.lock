@@ -491,9 +491,9 @@ dependencies = [
 
 [[package]]
 name = "http"
-version = "0.2.10"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f95b9abcae896730d42b78e09c155ed4ddf82c07b4de772c64aee5b2d8b7c150"
+checksum = "21b9ddb458710bc376481b842f5da65cdf31522de232c1ca8146abce2a358258"
 dependencies = [
  "bytes",
  "fnv",
@@ -726,9 +726,9 @@ checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
 
 [[package]]
 name = "openapiv3-extended"
-version = "4.0.4"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "481a4eec3bb350818fd87986982e820e227c98e818fcec6523a6081f646130a8"
+checksum = "756f9fddd9e5264d11c36c405a0b8a16bf7b2037bc8a424a0d14f74fd73dcb7f"
 dependencies = [
  "anyhow",
  "http",
