@@ -11,7 +11,7 @@ mod cte;
 pub use select::*;
 pub use insert::*;
 pub use update::*;
-pub use delete::*;
+// pub use delete::*;
 pub use alter_table::*;
 pub use create_table::*;
 pub use create_index::*;

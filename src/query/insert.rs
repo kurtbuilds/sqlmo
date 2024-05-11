@@ -14,6 +14,7 @@ pub enum OnConflict {
     DoUpdate {
         target: ConflictTarget,
         alternate_values: HashMap<String, Expr>,
+        ignore_columns: Vec<String>,
     },
 }
 
@@ -22,6 +23,7 @@ impl OnConflict {
         OnConflict::DoUpdate {
             target: ConflictTarget::Columns(columns.iter().map(|c| c.to_string()).collect()),
             alternate_values: HashMap::new(),
+            ignore_columns: Vec::new(),
         }
     }
 
@@ -29,6 +31,7 @@ impl OnConflict {
         OnConflict::DoUpdate {
             target: ConflictTarget::Columns(vec![pkey.to_string()]),
             alternate_values: HashMap::new(),
+            ignore_columns: Vec::new(),
         }
     }
 
@@ -250,12 +253,12 @@ impl ToSql for Insert {
                 Ignore => buf.push_str(" ON CONFLICT DO NOTHING"),
                 Abort => {}
                 Replace => panic!("Postgres does not support ON CONFLICT REPLACE"),
-                DoUpdate { target, alternate_values } => {
-                    let mut column_filter = Vec::new();
+                DoUpdate { target, alternate_values, ignore_columns } => {
+                    let mut column_filter = ignore_columns.clone();
                     buf.push_str(" ON CONFLICT ");
                     match target {
                         ConflictTarget::Columns(c) => {
-                            column_filter = c.clone();
+                            column_filter.extend_from_slice(c);
                             buf.push('(');
                             buf.push_quoted_sequence(c, ", ");
                             buf.push(')');
