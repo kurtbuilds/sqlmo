@@ -1,7 +1,7 @@
 use crate::{Dialect, ToSql};
 use crate::util::SqlExtension;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Case {
     cases: Vec<(Expr, Expr)>,
@@ -44,7 +44,7 @@ impl ToSql for Case {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Expr {
     Case(Case),

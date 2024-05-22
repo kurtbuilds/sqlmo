@@ -1,7 +1,7 @@
 use crate::{Dialect, ToSql};
 use crate::util::SqlExtension;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IndexType {
     BTree,
     Hash,
@@ -17,7 +17,7 @@ impl Default for IndexType {
 }
 
 /// Create index action for a table
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CreateIndex {
     pub name: String,
     pub unique: bool,

@@ -2,7 +2,7 @@ use crate::{Dialect, Table, Column, ToSql};
 use crate::util::SqlExtension;
 
 /// Create table action
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CreateTable {
     pub schema: Option<String>,
     pub name: String,

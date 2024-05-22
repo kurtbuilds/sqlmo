@@ -6,15 +6,17 @@ use anyhow::Result;
 use crate::query::AlterAction;
 use crate::query::CreateIndex;
 use crate::query::CreateTable;
+use crate::query::DropTable;
 use crate::schema::Schema;
 use crate::{Dialect, ToSql};
 
 #[derive(Debug, Clone, Default)]
 pub struct MigrationOptions {
     pub debug: bool,
+    pub allow_destructive: bool,
 }
 
-pub fn migrate(current: Schema, desired: Schema, _options: &MigrationOptions) -> Result<Migration> {
+pub fn migrate(current: Schema, desired: Schema, options: &MigrationOptions) -> Result<Migration> {
     let current_tables = current
         .tables
         .iter()
@@ -108,6 +110,20 @@ pub fn migrate(current: Schema, desired: Schema, _options: &MigrationOptions) ->
         }
     }
 
+    for (_name, current_table) in current_tables
+        .iter()
+        .filter(|(name, _)| !desired_tables.contains_key(*name))
+    {
+        if options.allow_destructive {
+            statements.push(Statement::DropTable(DropTable {
+                schema: current_table.schema.clone(),
+                name: current_table.name.clone(),
+            }));
+        } else {
+            debug_results.push(DebugResults::SkippedDropTable(current_table.name.clone()));
+        }
+    }
+
     Ok(Migration {
         statements,
         debug_results,
@@ -132,11 +148,12 @@ impl Migration {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Statement {
     CreateTable(CreateTable),
     CreateIndex(CreateIndex),
     AlterTable(AlterTable),
+    DropTable(DropTable),
     Update(Update),
 }
 
@@ -147,6 +164,9 @@ impl Statement {
                 s.schema = Some(schema_name.to_string());
             }
             Statement::AlterTable(s) => {
+                s.schema = Some(schema_name.to_string());
+            }
+            Statement::DropTable(s) => {
                 s.schema = Some(schema_name.to_string());
             }
             Statement::CreateIndex(s) => {
@@ -162,6 +182,7 @@ impl Statement {
         match self {
             Statement::CreateTable(s) => &s.name,
             Statement::AlterTable(s) => &s.name,
+            Statement::DropTable(s) => &s.name,
             Statement::CreateIndex(s) => &s.table,
             Statement::Update(s) => &s.table,
         }
@@ -175,6 +196,7 @@ impl ToSql for Statement {
             CreateTable(c) => c.write_sql(buf, dialect),
             CreateIndex(c) => c.write_sql(buf, dialect),
             AlterTable(a) => a.write_sql(buf, dialect),
+            DropTable(d) => d.write_sql(buf, dialect),
             Update(u) => u.write_sql(buf, dialect),
         }
     }
@@ -183,12 +205,58 @@ impl ToSql for Statement {
 #[derive(Debug)]
 pub enum DebugResults {
     TablesIdentical(String),
+    SkippedDropTable(String),
 }
 
 impl DebugResults {
     pub fn table_name(&self) -> &str {
         match self {
             DebugResults::TablesIdentical(name) => name,
+            DebugResults::SkippedDropTable(name) => name,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::Table;
+
+    #[test]
+    fn test_drop_table() {
+        let empty_schema = Schema::default();
+        let mut single_table_schema = Schema::default();
+        let t = Table::new("new_table");
+        single_table_schema.tables.push(t.clone());
+        let mut allow_destructive_options = MigrationOptions::default();
+        allow_destructive_options.allow_destructive = true;
+
+        let mut migrations = migrate(
+            single_table_schema,
+            empty_schema,
+            &allow_destructive_options,
+        )
+        .unwrap();
+
+        let statement = migrations.statements.pop().unwrap();
+        let expected_statement = Statement::DropTable(DropTable {
+            schema: t.schema,
+            name: t.name,
+        });
+
+        assert_eq!(statement, expected_statement);
+    }
+
+    #[test]
+    fn test_drop_table_without_destructive_operations() {
+        let empty_schema = Schema::default();
+        let mut single_table_schema = Schema::default();
+        let t = Table::new("new_table");
+        single_table_schema.tables.push(t.clone());
+        let options = MigrationOptions::default();
+
+        let migrations = migrate(single_table_schema, empty_schema, &options).unwrap();
+        assert!(migrations.statements.is_empty());
     }
 }

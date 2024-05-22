@@ -1,6 +1,6 @@
 use crate::{Dialect, Select, ToSql};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CteQuery {
     Select(Select),
     Raw(String),
@@ -16,7 +16,7 @@ impl ToSql for CteQuery {
 }
 
 /// Common table expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Cte {
     pub name: String,
     pub query: CteQuery,

@@ -9,7 +9,7 @@ pub use join::*;
 pub use expr::*;
 
 /// A SELECT query.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Select {
     pub ctes: Vec<Cte>,
     pub distinct: bool,
@@ -145,7 +145,7 @@ impl Select {
 }
 
 /// Represents a select column value.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SelectExpression {
     Column { schema: Option<String>, table: Option<String>, column: String },
     Raw(String),
@@ -153,7 +153,7 @@ pub enum SelectExpression {
 
 
 /// Represents a column of a SELECT statement.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SelectColumn {
     pub expression: SelectExpression,
     pub alias: Option<String>,
@@ -221,8 +221,7 @@ impl ToSql for SelectColumn {
     }
 }
 
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct From {
     pub schema: Option<String>,
     pub table: String,
@@ -239,7 +238,7 @@ impl ToSql for From {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Where {
     And(Vec<Where>),
     Or(Vec<Where>),
@@ -280,13 +279,13 @@ impl ToSql for Where {
 }
 
 /// The direction of a column in an ORDER BY clause.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction {
     Asc,
     Desc,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OrderBy {
     pub column: String,
     pub direction: Direction,
@@ -309,8 +308,7 @@ impl Default for Direction {
     }
 }
 
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GroupBy(String);
 
 impl ToSql for GroupBy {

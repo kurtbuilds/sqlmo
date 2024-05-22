@@ -4,7 +4,7 @@ use crate::to_sql::{Dialect, ToSql};
 
 use crate::util::SqlExtension;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Type {
     Boolean,

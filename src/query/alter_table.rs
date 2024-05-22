@@ -1,7 +1,7 @@
 use crate::{Dialect, Column, ToSql, Type};
 use crate::util::SqlExtension;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AlterColumnAction {
     SetType {
         typ: Type,
@@ -11,7 +11,7 @@ pub enum AlterColumnAction {
 }
 
 /// Alter table action
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AlterAction {
     AddColumn {
         column: Column,
@@ -41,7 +41,7 @@ impl AlterAction {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AlterTable {
     pub schema: Option<String>,
     pub name: String,

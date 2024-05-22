@@ -3,7 +3,7 @@ use crate::query::Where;
 use crate::{Dialect, ToSql};
 use crate::util::SqlExtension;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Update {
     pub ctes: Vec<Cte>,
     pub schema: Option<String>,
