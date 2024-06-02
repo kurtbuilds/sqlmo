@@ -2,7 +2,7 @@ use crate::{Type, ToSql, Dialect};
 use crate::query::Expr;
 use crate::util::SqlExtension;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Column {
     pub name: String,

@@ -2,13 +2,13 @@ use crate::{Dialect, Select, ToSql};
 use crate::query::Where;
 use crate::util::SqlExtension;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum JoinTable {
     Select(Select),
     Table { schema: Option<String>, table: String },
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum JoinType {
     Inner,
     Left,
@@ -22,7 +22,7 @@ impl Default for JoinType {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Criteria {
     On(Where),
     Using(Vec<String>),
@@ -44,7 +44,7 @@ impl ToSql for Criteria {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Join {
     pub typ: JoinType,
     pub table: JoinTable,
