@@ -38,6 +38,16 @@ pub enum Type {
     Other(String),
 }
 
+impl Type {
+    pub fn lossy_eq(&self, other: &Type) -> bool {
+        use Type::*;
+        match (self, other) {
+            (Other(_), Other(_)) => true,
+            (a, b) => a == b,
+        }
+    }
+}
+
 impl FromStr for Type {
     type Err = anyhow::Error;
 

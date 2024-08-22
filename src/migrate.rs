@@ -60,7 +60,7 @@ pub fn migrate(current: Schema, desired: Schema, options: &MigrationOptions) -> 
                         desired_column.nullable,
                     ));
                 }
-                if current.typ != desired_column.typ {
+                if !current.typ.lossy_eq(&desired_column.typ) {
                     actions.push(AlterAction::set_type(
                         desired_column.name.clone(),
                         desired_column.typ.clone(),
@@ -237,7 +237,7 @@ mod tests {
             empty_schema,
             &allow_destructive_options,
         )
-        .unwrap();
+            .unwrap();
 
         let statement = migrations.statements.pop().unwrap();
         let expected_statement = Statement::DropTable(DropTable {

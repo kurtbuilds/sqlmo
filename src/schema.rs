@@ -1,10 +1,7 @@
-#[cfg(feature = "sqlx")]
-mod from_postgres;
 mod table;
 mod r#type;
 mod column;
 mod index;
-
 
 pub use column::Column;
 pub use r#type::Type;
@@ -19,8 +16,6 @@ use crate::migrate::{Migration, migrate, MigrationOptions};
 pub struct Schema {
     pub tables: Vec<Table>,
 }
-
-
 
 impl Schema {
     /// Calculate the migration necessary to move from `self: Schema` to the argument `desired: Schema`.
