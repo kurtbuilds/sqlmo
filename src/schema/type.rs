@@ -42,7 +42,7 @@ impl Type {
     pub fn lossy_eq(&self, other: &Type) -> bool {
         use Type::*;
         match (self, other) {
-            (Other(_), Other(_)) => true,
+            (Other(_), _) => true,
             (a, b) => a == b,
         }
     }

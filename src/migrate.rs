@@ -60,7 +60,7 @@ pub fn migrate(current: Schema, desired: Schema, options: &MigrationOptions) -> 
                         desired_column.nullable,
                     ));
                 }
-                if !current.typ.lossy_eq(&desired_column.typ) {
+                if !desired_column.typ.lossy_eq(&current.typ) {
                     actions.push(AlterAction::set_type(
                         desired_column.name.clone(),
                         desired_column.typ.clone(),
