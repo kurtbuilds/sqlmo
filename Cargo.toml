@@ -6,7 +6,7 @@ members = [
 
 [package]
 name = "sqlmo"
-version = "0.18.0"
+version = "0.21.0"
 edition = "2021"
 description = "SQL data primitives. Use it to generate SQL queries, auto-generate SQL migrations, and more."
 license = "MIT"
@@ -17,6 +17,6 @@ documentation = "https://docs.rs/sqlmo"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.72"
-serde = { version = "1.0.171", features = ["derive"], optional = true }
-tracing = { version = "0.1.37", optional = true }
+anyhow = "1.0.89"
+serde = { version = "1.0.210", features = ["derive"], optional = true }
+tracing = { version = "0.1.40", optional = true }
