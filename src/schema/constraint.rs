@@ -26,7 +26,7 @@ impl Constraint {
 
 impl ToSql for ForeignKey {
     fn write_sql(&self, buf: &mut String, _dialect: Dialect) {
-        buf.push_str("REFERENCES");
+        buf.push_str("REFERENCES ");
         buf.push_quoted(&self.table);
         if !self.columns.is_empty() {
             buf.push('(');
