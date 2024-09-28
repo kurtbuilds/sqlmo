@@ -9,10 +9,6 @@ pub enum AlterColumnAction {
         using: Option<String>,
     },
     SetNullable(bool),
-    AddConstraint {
-        name: String,
-        constraint: Constraint,
-    },
 }
 
 /// Alter table action
@@ -24,6 +20,11 @@ pub enum AlterAction {
     AlterColumn {
         name: String,
         action: AlterColumnAction,
+    },
+    AddConstraint {
+        name: String,
+        column: String,
+        constraint: Constraint,
     },
 }
 
@@ -45,15 +46,9 @@ impl AlterAction {
         }
     }
 
-    pub fn add_constraint(name: String, constraint: Constraint) -> Self {
-        let constraint_name = format!("fk_{}_{}", name, constraint.name());
-        Self::AlterColumn {
-            name,
-            action: AlterColumnAction::AddConstraint {
-                name: constraint_name,
-                constraint,
-            },
-        }
+    pub fn add_constraint(column: String, constraint: Constraint) -> Self {
+        let name = format!("fk_{}_{}", column, constraint.name());
+        Self::AddConstraint { name, column, constraint }
     }
 }
 
@@ -111,13 +106,15 @@ impl ToSql for AlterAction {
                             buf.push_str(" SET NOT NULL");
                         }
                     }
-                    AddConstraint { name, constraint } => {
-                        buf.push_str(" ADD CONSTRAINT ");
-                        buf.push_quoted(name);
-                        buf.push(' ');
-                        buf.push_sql(constraint, dialect);
-                    }
                 }
+            }
+            AddConstraint { name, column, constraint } => {
+                buf.push_str(" ADD CONSTRAINT ");
+                buf.push_quoted(name);
+                buf.push_str(" FOREIGN KEY (");
+                buf.push_quoted(column);
+                buf.push_str(") ");
+                buf.push_sql(constraint, dialect);
             }
         }
     }

@@ -10,7 +10,9 @@ pub struct Column {
     pub typ: Type,
     pub nullable: bool,
     pub primary_key: bool,
+    #[cfg_attr(feature = "serde", serde(default, skip_serializing_if = "Option::is_none"))]
     pub default: Option<Expr>,
+    #[cfg_attr(feature = "serde", serde(default, skip_serializing_if = "Option::is_none"))]
     pub constraint: Option<Constraint>
 }
 

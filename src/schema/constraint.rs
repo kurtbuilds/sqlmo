@@ -2,12 +2,15 @@ use crate::{Dialect, ToSql};
 use crate::util::SqlExtension;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ForeignKey {
     pub table: String,
     pub columns: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(tag = "type"))]
 pub enum Constraint {
     ForeignKey(ForeignKey),
 }
