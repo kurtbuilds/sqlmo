@@ -134,6 +134,7 @@ fn schema_to_columns(schema: &oa::Schema, spec: &oa::OpenAPI, options: &FromOpen
             typ,
             nullable,
             default: None,
+            constraint: None,
         };
         columns.push(column);
     }
