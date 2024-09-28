@@ -66,6 +66,12 @@ pub fn migrate(current: Schema, desired: Schema, options: &MigrationOptions) -> 
                         desired_column.typ.clone(),
                     ));
                 };
+                if desired_column.constraint != current.constraint {
+                    if let Some(c) = &desired_column.constraint {
+                        let name = desired_column.name.clone();
+                        actions.push(AlterAction::add_constraint(name, c.clone()));
+                    }
+                }
             } else {
                 // add the column can be in 1 step if the column is nullable
                 if desired_column.nullable {

@@ -2,10 +2,12 @@ mod table;
 mod r#type;
 mod column;
 mod index;
+mod constraint;
 
 pub use column::Column;
 pub use r#type::Type;
 pub use table::Table;
+pub use constraint::{Constraint, ForeignKey};
 
 use anyhow::Result;
 use crate::migrate::{Migration, migrate, MigrationOptions};

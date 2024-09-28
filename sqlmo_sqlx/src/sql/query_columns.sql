@@ -8,8 +8,6 @@ SELECT
 	numeric_scale,
 	CASE WHEN data_type = 'ARRAY' THEN
 		substr(udt_name, 2)
-	ELSE
-		NULL
 	END AS inner_type
 FROM
 	information_schema.columns
@@ -18,3 +16,4 @@ WHERE
 ORDER BY
 	table_name,
 	ordinal_position
+

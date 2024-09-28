@@ -1,4 +1,5 @@
 use crate::{Dialect, Column, ToSql, Type};
+use crate::schema::Constraint;
 use crate::util::SqlExtension;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -8,6 +9,10 @@ pub enum AlterColumnAction {
         using: Option<String>,
     },
     SetNullable(bool),
+    AddConstraint {
+        name: String,
+        constraint: Constraint,
+    },
 }
 
 /// Alter table action
@@ -36,6 +41,17 @@ impl AlterAction {
             action: AlterColumnAction::SetType {
                 typ,
                 using: None,
+            },
+        }
+    }
+
+    pub fn add_constraint(name: String, constraint: Constraint) -> Self {
+        let constraint_name = format!("fk_{}_{}", name, constraint.name());
+        Self::AlterColumn {
+            name,
+            action: AlterColumnAction::AddConstraint {
+                name: constraint_name,
+                constraint,
             },
         }
     }
@@ -94,6 +110,12 @@ impl ToSql for AlterAction {
                         } else {
                             buf.push_str(" SET NOT NULL");
                         }
+                    }
+                    AddConstraint { name, constraint } => {
+                        buf.push_str(" ADD CONSTRAINT ");
+                        buf.push_quoted(name);
+                        buf.push(' ');
+                        buf.push_sql(constraint, dialect);
                     }
                 }
             }

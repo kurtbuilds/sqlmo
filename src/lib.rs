@@ -11,7 +11,7 @@ pub mod util;
 #[doc(inline)]
 pub use migrate::{Migration, MigrationOptions, migrate};
 #[doc(inline)]
-pub use schema::{Schema, Table, Column, Type};
+pub use schema::{Schema, Table, Column, Type, Constraint};
 #[doc(inline)]
 pub use to_sql::{ToSql, Dialect};
 #[doc(inline)]

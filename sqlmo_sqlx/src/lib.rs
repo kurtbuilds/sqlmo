@@ -6,8 +6,6 @@ use async_trait::async_trait;
 
 use sqlmo::{Schema, Column, Table, schema};
 
-const QUERY_COLUMNS: &str = include_str!("sql/query_columns.sql");
-const QUERY_TABLES: &str = include_str!("sql/query_tables.sql");
 
 #[async_trait]
 pub trait FromPostgres: Sized {
@@ -28,7 +26,8 @@ struct SchemaColumn {
 }
 
 async fn query_schema_columns(conn: &mut PgConnection, schema_name: &str) -> Result<Vec<SchemaColumn>> {
-    let result = sqlx::query_as::<_, SchemaColumn>(QUERY_COLUMNS)
+    let s = include_str!("sql/query_columns.sql");
+    let result = sqlx::query_as::<_, SchemaColumn>(s)
         .bind(schema_name)
         .fetch_all(conn)
         .await?;
@@ -43,13 +42,33 @@ struct TableSchema {
 }
 
 async fn query_table_names(conn: &mut PgConnection, schema_name: &str) -> Result<Vec<String>> {
-    let result = sqlx::query_as::<_, TableSchema>(QUERY_TABLES)
+    let s = include_str!("sql/query_tables.sql");
+    let result = sqlx::query_as::<_, TableSchema>(s)
         .bind(schema_name)
         .fetch_all(conn)
         .await?;
     Ok(result.into_iter().map(|t| t.table_name).collect())
 }
 
+#[derive(sqlx::FromRow)]
+#[allow(dead_code)]
+struct ForeignKey {
+    pub table_schema: String,
+    pub constraint_name: String,
+    pub table_name: String,
+    pub column_name: String,
+    pub foreign_table_schema: String,
+    pub foreign_table_name: String,
+    pub foreign_column_name: String,
+}
+
+async fn query_constraints(conn: &mut PgConnection, schema_name: &str) -> Result<Vec<ForeignKey>> {
+    let s = include_str!("sql/query_constraints.sql");
+    Ok(sqlx::query_as::<_, ForeignKey>(s)
+        .bind(schema_name)
+        .fetch_all(conn)
+        .await?)
+}
 
 impl TryInto<Column> for SchemaColumn {
     type Error = Error;
@@ -73,6 +92,7 @@ impl TryInto<Column> for SchemaColumn {
             nullable,
             primary_key: false,
             default: None,
+            constraint: None,
         })
     }
 }
@@ -82,7 +102,7 @@ impl FromPostgres for Schema {
     async fn try_from_postgres(conn: &mut PgConnection, schema_name: &str) -> Result<Schema> {
         let column_schemas = query_schema_columns(conn, schema_name).await?;
         let mut tables = column_schemas.into_iter()
-            .group_by(|c| c.table_name.clone())
+            .chunk_by(|c| c.table_name.clone())
             .into_iter()
             .map(|(table_name, group)| {
                 let columns = group
@@ -96,6 +116,16 @@ impl FromPostgres for Schema {
                 })
             })
             .collect::<Result<Vec<_>, Error>>()?;
+
+        let constraints = query_constraints(conn, schema_name).await?;
+        for fk in constraints {
+            let table = tables.iter_mut().find(|t| t.name == fk.table_name).expect("Constraint for unknown table.");
+            let column = table.columns.iter_mut().find(|c| c.name == fk.column_name).expect("Constraint for unknown column.");
+            column.constraint = Some(schema::Constraint::ForeignKey(schema::ForeignKey {
+                table: fk.foreign_table_name,
+                columns: vec![fk.foreign_column_name],
+            }));
+        }
 
         // Degenerate case but you can have tables with no columns...
         let table_names = query_table_names(conn, schema_name).await?;

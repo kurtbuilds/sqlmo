@@ -1,5 +1,6 @@
-use crate::{Type, ToSql, Dialect};
+use crate::{Dialect, ToSql, Type};
 use crate::query::Expr;
+use crate::schema::constraint::Constraint;
 use crate::util::SqlExtension;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -10,6 +11,7 @@ pub struct Column {
     pub nullable: bool,
     pub primary_key: bool,
     pub default: Option<Expr>,
+    pub constraint: Option<Constraint>
 }
 
 
@@ -27,6 +29,10 @@ impl ToSql for Column {
         if let Some(default) = &self.default {
             buf.push_str(" DEFAULT ");
             buf.push_sql(default, dialect);
+        }
+        if let Some(constraint) = &self.constraint {
+            buf.push(' ');
+            buf.push_sql(constraint, dialect);
         }
     }
 }
