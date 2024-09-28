@@ -10,7 +10,7 @@ repository = "https://github.com/kurtbuilds/sqlmo"
 
 [dependencies]
 tokio = { version = "1.40.0", features = ["full"], optional = true }
-sqlmo = { path = "..", version = "0.18" }
+sqlmo = { path = "..", version = "0.21" }
 sqlx = { version = "0.8.2", features = ["runtime-tokio-rustls", "postgres"] }
 anyhow = "1.0.89"
 itertools = "0.13.0"

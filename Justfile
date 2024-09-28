@@ -1,5 +1,6 @@
 set positional-arguments
 set dotenv-load
+set export
 
 help:
     @just --list --unsorted
