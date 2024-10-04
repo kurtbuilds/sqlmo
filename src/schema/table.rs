@@ -11,6 +11,10 @@ pub struct Table {
 }
 
 impl Table {
+    pub fn primary_key(&self) -> Option<&Column> {
+        self.columns.iter().find(|c| c.primary_key)
+    }
+
     pub fn new(name: &str) -> Table {
         Table {
             schema: None,
