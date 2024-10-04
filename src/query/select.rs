@@ -1,12 +1,12 @@
 use crate::query::{Cte, CteQuery};
-use crate::{Dialect, ToSql};
 use crate::util::SqlExtension;
+use crate::{Dialect, ToSql};
 
-mod join;
 mod expr;
+mod join;
 
-pub use join::*;
 pub use expr::*;
+pub use join::*;
 
 /// A SELECT query.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -147,10 +147,13 @@ impl Select {
 /// Represents a select column value.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SelectExpression {
-    Column { schema: Option<String>, table: Option<String>, column: String },
+    Column {
+        schema: Option<String>,
+        table: Option<String>,
+        column: String,
+    },
     Raw(String),
 }
-
 
 /// Represents a column of a SELECT statement.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -199,7 +202,11 @@ impl ToSql for SelectColumn {
     fn write_sql(&self, buf: &mut String, _: Dialect) {
         use SelectExpression::*;
         match &self.expression {
-            Column { schema, table, column } => {
+            Column {
+                schema,
+                table,
+                column,
+            } => {
                 if let Some(schema) = schema {
                     buf.push_quoted(schema);
                     buf.push('.');
@@ -264,11 +271,11 @@ impl ToSql for Where {
     fn write_sql(&self, buf: &mut String, dialect: Dialect) {
         match self {
             Where::And(v) => {
-                buf.push_sql_sequence(v, " AND ", dialect);
+                buf.push_sql_sequence(&v, " AND ", dialect);
             }
             Where::Or(v) => {
                 buf.push('(');
-                buf.push_sql_sequence(v, " OR ", dialect);
+                buf.push_sql_sequence(&v, " OR ", dialect);
                 buf.push(')');
             }
             Where::Raw(s) => {
@@ -317,7 +324,6 @@ impl ToSql for GroupBy {
     }
 }
 
-
 impl ToSql for Select {
     fn write_sql(&self, buf: &mut String, dialect: Dialect) {
         if !self.ctes.is_empty() {
@@ -364,7 +370,6 @@ impl ToSql for Select {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

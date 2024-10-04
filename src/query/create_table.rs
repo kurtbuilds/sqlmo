@@ -1,5 +1,5 @@
-use crate::{Dialect, Table, Column, ToSql};
 use crate::util::SqlExtension;
+use crate::{Column, Dialect, Table, ToSql};
 
 /// Create table action
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -8,7 +8,6 @@ pub struct CreateTable {
     pub name: String,
     pub columns: Vec<Column>,
 }
-
 
 impl CreateTable {
     pub fn from_table(table: &Table) -> CreateTable {

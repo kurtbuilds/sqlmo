@@ -1,7 +1,7 @@
 use crate::query::Cte;
 use crate::query::Where;
-use crate::{Dialect, ToSql};
 use crate::util::SqlExtension;
+use crate::{Dialect, ToSql};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Update {

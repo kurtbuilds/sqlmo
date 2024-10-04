@@ -1,13 +1,10 @@
-use crate::{Dialect, Column, ToSql, Type};
 use crate::schema::Constraint;
 use crate::util::SqlExtension;
+use crate::{Column, Dialect, ToSql, Type};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AlterColumnAction {
-    SetType {
-        typ: Type,
-        using: Option<String>,
-    },
+    SetType { typ: Type, using: Option<String> },
     SetNullable(bool),
 }
 
@@ -39,16 +36,17 @@ impl AlterAction {
     pub fn set_type(name: String, typ: Type) -> Self {
         Self::AlterColumn {
             name,
-            action: AlterColumnAction::SetType {
-                typ,
-                using: None,
-            },
+            action: AlterColumnAction::SetType { typ, using: None },
         }
     }
 
     pub fn add_constraint(column: String, constraint: Constraint) -> Self {
         let name = format!("fk_{}_{}", column, constraint.name());
-        Self::AddConstraint { name, column, constraint }
+        Self::AddConstraint {
+            name,
+            column,
+            constraint,
+        }
     }
 }
 
@@ -62,12 +60,15 @@ pub struct AlterTable {
 impl ToSql for AlterTable {
     fn write_sql(&self, buf: &mut String, dialect: Dialect) {
         #[cfg(feature = "tracing")]
-        tracing::error_span!("alter-table", table = format!(
-            "{}{}{}",
-            self.schema.as_deref().unwrap_or(""),
-            if self.schema.is_some() { "." } else { "" },
-            self.name
-        ));
+        tracing::error_span!(
+            "alter-table",
+            table = format!(
+                "{}{}{}",
+                self.schema.as_deref().unwrap_or(""),
+                if self.schema.is_some() { "." } else { "" },
+                self.name
+            )
+        );
         buf.push_str("ALTER TABLE ");
         buf.push_table_name(&self.schema, &self.name);
         buf.push_sql_sequence(&self.actions, ",", dialect);
@@ -108,7 +109,11 @@ impl ToSql for AlterAction {
                     }
                 }
             }
-            AddConstraint { name, column, constraint } => {
+            AddConstraint {
+                name,
+                column,
+                constraint,
+            } => {
                 buf.push_str(" ADD CONSTRAINT ");
                 buf.push_quoted(name);
                 buf.push_str(" FOREIGN KEY (");

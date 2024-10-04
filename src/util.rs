@@ -32,7 +32,7 @@ impl SqlExtension for String {
 
     fn push_sql_sequence<T: ToSql>(&mut self, sql: &[T], separator: &str, dialect: Dialect) {
         let mut first = true;
-        for s in sql {
+        for s in sql.into_iter() {
             if !first {
                 self.push_str(separator);
             }

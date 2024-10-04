@@ -6,7 +6,7 @@ members = [
 
 [package]
 name = "sqlmo"
-version = "0.21.0"
+version = "0.22.0"
 edition = "2021"
 description = "SQL data primitives. Use it to generate SQL queries, auto-generate SQL migrations, and more."
 license = "MIT"
@@ -20,3 +20,6 @@ documentation = "https://docs.rs/sqlmo"
 anyhow = "1.0.89"
 serde = { version = "1.0.210", features = ["derive"], optional = true }
 tracing = { version = "0.1.40", optional = true }
+
+[dev-dependencies]
+pretty_assertions = "1.4.1"

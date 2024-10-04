@@ -1,7 +1,7 @@
-use std::collections::HashMap;
-use crate::{Dialect, Select, ToSql};
 use crate::query::Expr;
 use crate::util::SqlExtension;
+use crate::{Dialect, Select, ToSql};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum OnConflict {
@@ -9,27 +9,31 @@ pub enum OnConflict {
     Abort,
     /// Only valid for Sqlite, because we
     Replace,
-
     /// Only valid for Postgres
     DoUpdate {
-        target: ConflictTarget,
+        conflict: Conflict,
+        updates: Vec<(String, Expr)>,
+    },
+    /// Only valid for Postgres
+    DoUpdateAllRows {
+        conflict: Conflict,
         alternate_values: HashMap<String, Expr>,
         ignore_columns: Vec<String>,
     },
 }
 
 impl OnConflict {
-    pub fn do_update(columns: &[&str]) -> Self {
-        OnConflict::DoUpdate {
-            target: ConflictTarget::Columns(columns.iter().map(|c| c.to_string()).collect()),
+    pub fn do_update_all_rows(columns: &[&str]) -> Self {
+        OnConflict::DoUpdateAllRows {
+            conflict: Conflict::Columns(columns.iter().map(|c| c.to_string()).collect()),
             alternate_values: HashMap::new(),
             ignore_columns: Vec::new(),
         }
     }
 
     pub fn do_update_on_pkey(pkey: &str) -> Self {
-        OnConflict::DoUpdate {
-            target: ConflictTarget::Columns(vec![pkey.to_string()]),
+        OnConflict::DoUpdateAllRows {
+            conflict: Conflict::Columns(vec![pkey.to_string()]),
             alternate_values: HashMap::new(),
             ignore_columns: Vec::new(),
         }
@@ -37,7 +41,9 @@ impl OnConflict {
 
     pub fn alternate_value<V: Into<Expr>>(mut self, column: &str, value: V) -> Self {
         match &mut self {
-            OnConflict::DoUpdate { alternate_values, .. } => {
+            OnConflict::DoUpdateAllRows {
+                alternate_values, ..
+            } => {
                 alternate_values.insert(column.to_string(), value.into());
             }
             _ => panic!("alternate_value is only valid for DoUpdate"),
@@ -47,15 +53,45 @@ impl OnConflict {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum ConflictTarget {
+pub enum Conflict {
     Columns(Vec<String>),
     ConstraintName(String),
     NoTarget,
 }
 
+impl Conflict {
+    pub fn columns(t: impl IntoIterator<Item = impl Into<String>>) -> Self {
+        Conflict::Columns(t.into_iter().map(|c| c.into()).collect())
+    }
+
+    pub fn as_columns(&self) -> Option<&Vec<String>> {
+        match self {
+            Conflict::Columns(c) => Some(c),
+            _ => None,
+        }
+    }
+}
+
 impl Default for OnConflict {
     fn default() -> Self {
         OnConflict::Abort
+    }
+}
+
+impl ToSql for Conflict {
+    fn write_sql(&self, buf: &mut String, _dialect: Dialect) {
+        match self {
+            Conflict::Columns(c) => {
+                buf.push('(');
+                buf.push_quoted_sequence(c, ", ");
+                buf.push(')');
+            }
+            Conflict::ConstraintName(name) => {
+                buf.push_str("ON CONSTRAINT ");
+                buf.push_quoted(name);
+            }
+            Conflict::NoTarget => {}
+        }
     }
 }
 
@@ -237,7 +273,9 @@ impl ToSql for Insert {
                 Ignore => buf.push_str("INSERT OR IGNORE INTO "),
                 Abort => buf.push_str("INSERT OR ABORT INTO "),
                 Replace => buf.push_str("INSERT OR REPLACE INTO "),
-                DoUpdate { .. } => panic!("Sqlite does not support ON CONFLICT DO UPDATE"),
+                DoUpdateAllRows { .. } | DoUpdate { .. } => {
+                    panic!("Sqlite does not support ON CONFLICT DO UPDATE")
+                }
             }
         } else {
             buf.push_str("INSERT INTO ");
@@ -253,42 +291,43 @@ impl ToSql for Insert {
                 Ignore => buf.push_str(" ON CONFLICT DO NOTHING"),
                 Abort => {}
                 Replace => panic!("Postgres does not support ON CONFLICT REPLACE"),
-                DoUpdate { target, alternate_values, ignore_columns } => {
-                    let mut column_filter = ignore_columns.clone();
+                DoUpdate { conflict, updates } => {
                     buf.push_str(" ON CONFLICT ");
-                    match target {
-                        ConflictTarget::Columns(c) => {
-                            column_filter.extend_from_slice(c);
-                            buf.push('(');
-                            buf.push_quoted_sequence(c, ", ");
-                            buf.push(')');
-                        }
-                        ConflictTarget::ConstraintName(name) => {
-                            buf.push_str("ON CONSTRAINT ");
-                            buf.push_quoted(name);
-                        }
-                        ConflictTarget::NoTarget => {}
-                    }
+                    buf.push_sql(conflict, dialect);
                     buf.push_str(" DO UPDATE SET ");
-                    let mut first = true;
-                    for column in self.columns.iter().filter(|c| !column_filter.contains(c)) {
-                        if !first {
-                            buf.push_str(", ");
-                        }
-                        buf.push_quoted(column);
-                        buf.push_str(" = ");
-                        if let Some(alternate_value) = alternate_values.get(column) {
-                            buf.push_sql(alternate_value, dialect);
-                        } else {
-                            buf.push_str("EXCLUDED.");
-                            buf.push_quoted(column);
-                        }
-                        first = false;
-                    }
+                    let updates: Vec<Expr> = updates
+                        .into_iter()
+                        .map(|(c, v)| Expr::new_eq(Expr::column(c), v.clone()))
+                        .collect();
+                    buf.push_sql_sequence(&updates, ", ", dialect);
+                }
+                DoUpdateAllRows {
+                    conflict,
+                    alternate_values,
+                    ignore_columns,
+                } => {
+                    buf.push_str(" ON CONFLICT ");
+                    buf.push_sql(conflict, dialect);
+                    buf.push_str(" DO UPDATE SET ");
+                    let conflict_columns = conflict.as_columns();
+                    let columns: Vec<Expr> = self
+                        .columns
+                        .iter()
+                        .filter(|&c| !ignore_columns.contains(c))
+                        .filter(|&c| conflict_columns.map(|conflict| !conflict.contains(c)).unwrap_or(true))
+                        .map(|c| {
+                            let r = if let Some(v) = alternate_values.get(c) {
+                                v.clone()
+                            } else {
+                                Expr::table_column("EXCLUDED", c)
+                            };
+                            Expr::new_eq(Expr::column(c), r)
+                        })
+                        .collect();
+                    buf.push_sql_sequence(&columns, ", ", dialect);
                 }
             }
         }
-
         if !self.returning.is_empty() {
             buf.push_str(" RETURNING ");
             buf.push_quoted_sequence(&self.returning, ", ");
@@ -298,8 +337,9 @@ impl ToSql for Insert {
 
 #[cfg(test)]
 mod tests {
-    use crate::query::{Case, Expr};
+    use pretty_assertions::assert_eq;
     use super::*;
+    use crate::query::{Case, Expr};
 
     #[test]
     fn test_basic() {
@@ -307,10 +347,7 @@ mod tests {
             schema: None,
             table: "foo".to_string(),
             columns: vec!["bar".to_string(), "baz".to_string()],
-            values: Values::from(&[
-                &["1", "2"] as &[&str],
-                &["3", "4"],
-            ] as &[&[&str]]),
+            values: Values::from(&[&["1", "2"] as &[&str], &["3", "4"]] as &[&[&str]]),
             on_conflict: OnConflict::Abort,
             returning: vec!["id".to_string()],
         };
@@ -325,8 +362,8 @@ mod tests {
         let insert = Insert::new("foo")
             .columns(&["bar", "baz", "qux", "wibble", "wobble", "wubble"])
             .placeholder_for_each_column(Dialect::Postgres)
-            .on_conflict(OnConflict::do_update(&["bar"]));
-        let expected = r#"INSERT INTO "foo" ("bar", "baz", "qux", "wibble", "wobble", "wubble") VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT ("bar") DO UPDATE SET "baz" = EXCLUDED."baz", "qux" = EXCLUDED."qux", "wibble" = EXCLUDED."wibble", "wobble" = EXCLUDED."wobble", "wubble" = EXCLUDED."wubble""#;
+            .on_conflict(OnConflict::do_update_all_rows(&["bar"]));
+        let expected = r#"INSERT INTO "foo" ("bar", "baz", "qux", "wibble", "wobble", "wubble") VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT ("bar") DO UPDATE SET "baz" = "EXCLUDED"."baz", "qux" = "EXCLUDED"."qux", "wibble" = "EXCLUDED"."wibble", "wobble" = "EXCLUDED"."wobble", "wubble" = "EXCLUDED"."wubble""#;
         assert_eq!(insert.to_sql(Dialect::Postgres), expected);
     }
 
@@ -334,36 +371,51 @@ mod tests {
     fn test_override() {
         let columns = &["id", "name", "email"];
 
-        let update_conditional = columns.iter().map(|&c| {
-            Expr::not_distinct_from(Expr::table_column("users", c), Expr::table_column("excluded", c))
-        }).collect::<Vec<_>>();
+        let update_conditional = columns
+            .iter()
+            .map(|&c| {
+                Expr::not_distinct_from(
+                    Expr::table_column("users", c),
+                    Expr::table_column("excluded", c),
+                )
+            })
+            .collect::<Vec<_>>();
         let on_conflict_update_value = Expr::case(
-            Case::new_when(Expr::new_and(update_conditional), Expr::table_column("users", "updated_at"))
-                .els("excluded.updated_at")
+            Case::new_when(
+                Expr::new_and(update_conditional),
+                Expr::table_column("users", "updated_at"),
+            )
+            .els("excluded.updated_at"),
         );
 
         let insert = Insert::new("users")
             .columns(columns)
             .column("updated_at")
             .values(Values::new_value(Value::with(&[
-                "1", "Kurt", "test@example.com", "NOW()",
+                "1",
+                "Kurt",
+                "test@example.com",
+                "NOW()",
             ])))
-            .on_conflict(OnConflict::do_update_on_pkey("id")
-                .alternate_value("updated_at", on_conflict_update_value));
+            .on_conflict(
+                OnConflict::do_update_on_pkey("id")
+                    .alternate_value("updated_at", on_conflict_update_value),
+            );
         let sql = insert.to_sql(Dialect::Postgres);
         let expected = r#"
 INSERT INTO "users" ("id", "name", "email", "updated_at") VALUES
 (1, Kurt, test@example.com, NOW())
 ON CONFLICT ("id") DO UPDATE SET
-"name" = EXCLUDED."name",
-"email" = EXCLUDED."email",
+"name" = "EXCLUDED"."name",
+"email" = "EXCLUDED"."email",
 "updated_at" = CASE WHEN
 ("users"."id" IS NOT DISTINCT FROM "excluded"."id" AND
 "users"."name" IS NOT DISTINCT FROM "excluded"."name" AND
 "users"."email" IS NOT DISTINCT FROM "excluded"."email")
 THEN "users"."updated_at"
 ELSE excluded.updated_at END
-"#.replace("\n", " ");
+"#
+        .replace("\n", " ");
         assert_eq!(sql, expected.trim());
     }
 }

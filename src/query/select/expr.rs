@@ -1,5 +1,5 @@
-use crate::{Dialect, ToSql};
 use crate::util::SqlExtension;
+use crate::{Dialect, ToSql};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -56,6 +56,7 @@ pub enum Expr {
         table: Option<String>,
         column: String,
     },
+    Eq(Box<Expr>, Box<Expr>),
 }
 
 impl Expr {
@@ -65,6 +66,10 @@ impl Expr {
             table: None,
             column: column.to_string(),
         }
+    }
+
+    pub fn new_eq<L: Into<Expr>, R: Into<Expr>>(left: L, right: R) -> Self {
+        Self::Eq(Box::new(left.into()), Box::new(right.into()))
     }
 
     pub fn table_column(table: &str, column: &str) -> Self {
@@ -108,12 +113,7 @@ impl ToSql for Expr {
             Expr::Case(c) => c.write_sql(buf, dialect),
             Expr::And(and) => {
                 buf.push('(');
-                for (i, e) in and.iter().enumerate() {
-                    if i > 0 {
-                        buf.push_str(" AND ");
-                    }
-                    buf.push_sql(e, dialect);
-                }
+                buf.push_sql_sequence(&and, " AND ", dialect);
                 buf.push(')');
             }
             Expr::Raw(a) => buf.push_str(a),
@@ -122,7 +122,11 @@ impl ToSql for Expr {
                 buf.push_str(" IS NOT DISTINCT FROM ");
                 buf.push_sql(r.as_ref(), dialect);
             }
-            Expr::Column { schema, table, column } => {
+            Expr::Column {
+                schema,
+                table,
+                column,
+            } => {
                 if let Some(schema) = schema {
                     buf.push_quoted(schema);
                     buf.push('.');
@@ -132,6 +136,11 @@ impl ToSql for Expr {
                     buf.push('.');
                 }
                 buf.push_quoted(column);
+            }
+            Expr::Eq(l, r) => {
+                buf.push_sql(l.as_ref(), dialect);
+                buf.push_str(" = ");
+                buf.push_sql(r.as_ref(), dialect);
             }
         }
     }
