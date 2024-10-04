@@ -40,8 +40,8 @@ impl AlterAction {
         }
     }
 
-    pub fn add_constraint(column: String, constraint: Constraint) -> Self {
-        let name = format!("fk_{}_{}", column, constraint.name());
+    pub fn add_constraint(table: &str, column: String, constraint: Constraint) -> Self {
+        let name = format!("fk_{table}_{column}_{}", constraint.name());
         Self::AddConstraint {
             name,
             column,

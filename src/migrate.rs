@@ -69,7 +69,7 @@ pub fn migrate(current: Schema, desired: Schema, options: &MigrationOptions) -> 
                 if desired_column.constraint != current.constraint {
                     if let Some(c) = &desired_column.constraint {
                         let name = desired_column.name.clone();
-                        actions.push(AlterAction::add_constraint(name, c.clone()));
+                        actions.push(AlterAction::add_constraint(&desired_table.name, name, c.clone()));
                     }
                 }
             } else {
