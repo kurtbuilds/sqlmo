@@ -15,5 +15,5 @@ pub use schema::{Schema, Table, Column, Type, Constraint};
 #[doc(inline)]
 pub use to_sql::{ToSql, Dialect};
 #[doc(inline)]
-pub use query::{Select, Insert, CreateIndex, CreateTable, AlterTable};
+pub use query::{Select, Insert, CreateIndex, CreateTable, AlterTable, Operation, Expr};
 

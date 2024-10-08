@@ -319,7 +319,7 @@ impl ToSql for Insert {
                             let r = if let Some(v) = alternate_values.get(c) {
                                 v.clone()
                             } else {
-                                Expr::table_column("EXCLUDED", c)
+                                Expr::Raw(format!("EXCLUDED.\"{c}\""))
                             };
                             Expr::new_eq(Expr::column(c), r)
                         })

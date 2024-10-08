@@ -46,6 +46,16 @@ impl ToSql for Case {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum Operation {
+    Eq,
+    Gte,
+    Lte,
+    Gt,
+    Lt,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Expr {
     Case(Case),
     And(Vec<Expr>),
@@ -56,7 +66,9 @@ pub enum Expr {
         table: Option<String>,
         column: String,
     },
+    #[deprecated]
     Eq(Box<Expr>, Box<Expr>),
+    BinOp(Operation, Box<Expr>, Box<Expr>),
 }
 
 impl Expr {
@@ -142,6 +154,23 @@ impl ToSql for Expr {
                 buf.push_str(" = ");
                 buf.push_sql(r.as_ref(), dialect);
             }
+            Expr::BinOp(op, l, r) => {
+                buf.push_sql(l.as_ref(), dialect);
+                buf.push_sql(op, dialect);
+                buf.push_sql(r.as_ref(), dialect);
+            }
+        }
+    }
+}
+
+impl ToSql for Operation {
+    fn write_sql(&self, buf: &mut String, _dialect: Dialect) {
+        match self {
+            Operation::Eq => buf.push_str(" = "),
+            Operation::Gte => buf.push_str(" >= "),
+            Operation::Lte => buf.push_str(" <= "),
+            Operation::Gt => buf.push_str(" > "),
+            Operation::Lt => buf.push_str(" < "),
         }
     }
 }
