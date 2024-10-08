@@ -72,6 +72,10 @@ pub enum Expr {
 }
 
 impl Expr {
+    pub fn excluded(column: &str) -> Self {
+        Self::Raw(format!("excluded.\"{}\"", column))
+    }
+
     pub fn column(column: &str) -> Self {
         Self::Column {
             schema: None,
