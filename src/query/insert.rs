@@ -319,7 +319,7 @@ impl ToSql for Insert {
                             let r = if let Some(v) = alternate_values.get(c) {
                                 v.clone()
                             } else {
-                                Expr::Raw(format!("EXCLUDED.\"{c}\""))
+                                Expr::excluded(c)
                             };
                             Expr::new_eq(Expr::column(c), r)
                         })
@@ -363,7 +363,7 @@ mod tests {
             .columns(&["bar", "baz", "qux", "wibble", "wobble", "wubble"])
             .placeholder_for_each_column(Dialect::Postgres)
             .on_conflict(OnConflict::do_update_all_rows(&["bar"]));
-        let expected = r#"INSERT INTO "foo" ("bar", "baz", "qux", "wibble", "wobble", "wubble") VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT ("bar") DO UPDATE SET "baz" = EXCLUDED."baz", "qux" = EXCLUDED."qux", "wibble" = EXCLUDED."wibble", "wobble" = EXCLUDED."wobble", "wubble" = EXCLUDED."wubble""#;
+        let expected = r#"INSERT INTO "foo" ("bar", "baz", "qux", "wibble", "wobble", "wubble") VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT ("bar") DO UPDATE SET "baz" = excluded."baz", "qux" = excluded."qux", "wibble" = excluded."wibble", "wobble" = excluded."wobble", "wubble" = excluded."wubble""#;
         assert_eq!(insert.to_sql(Dialect::Postgres), expected);
     }
 
@@ -376,7 +376,7 @@ mod tests {
             .map(|&c| {
                 Expr::not_distinct_from(
                     Expr::table_column("users", c),
-                    Expr::Raw(format!("EXCLUDED.\"{c}\"")),
+                    Expr::excluded(c),
                 )
             })
             .collect::<Vec<_>>();
@@ -406,12 +406,12 @@ mod tests {
 INSERT INTO "users" ("id", "name", "email", "updated_at") VALUES
 (1, Kurt, test@example.com, NOW())
 ON CONFLICT ("id") DO UPDATE SET
-"name" = EXCLUDED."name",
-"email" = EXCLUDED."email",
+"name" = excluded."name",
+"email" = excluded."email",
 "updated_at" = CASE WHEN
-("users"."id" IS NOT DISTINCT FROM EXCLUDED."id" AND
-"users"."name" IS NOT DISTINCT FROM EXCLUDED."name" AND
-"users"."email" IS NOT DISTINCT FROM EXCLUDED."email")
+("users"."id" IS NOT DISTINCT FROM excluded."id" AND
+"users"."name" IS NOT DISTINCT FROM excluded."name" AND
+"users"."email" IS NOT DISTINCT FROM excluded."email")
 THEN "users"."updated_at"
 ELSE excluded.updated_at END
 "#
