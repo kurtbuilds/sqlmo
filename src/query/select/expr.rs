@@ -85,7 +85,7 @@ impl Expr {
     }
 
     pub fn new_eq<L: Into<Expr>, R: Into<Expr>>(left: L, right: R) -> Self {
-        Self::Eq(Box::new(left.into()), Box::new(right.into()))
+        Self::BinOp(Operation::Eq, Box::new(left.into()), Box::new(right.into()))
     }
 
     pub fn table_column(table: &str, column: &str) -> Self {
@@ -153,6 +153,7 @@ impl ToSql for Expr {
                 }
                 buf.push_quoted(column);
             }
+            #[allow(deprecated)]
             Expr::Eq(l, r) => {
                 buf.push_sql(l.as_ref(), dialect);
                 buf.push_str(" = ");

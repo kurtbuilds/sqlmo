@@ -1,6 +1,6 @@
-use std::str::FromStr;
-use anyhow::{Result};
 use crate::to_sql::{Dialect, ToSql};
+use anyhow::Result;
+use std::str::FromStr;
 
 use crate::util::SqlExtension;
 
@@ -58,6 +58,7 @@ impl FromStr for Type {
             "bigint" => I64,
             "int8" => I64,
             "double precision" => F64,
+            "real" => F32,
             "bool" => Boolean,
             "boolean" => Boolean,
             "date" => Date,
@@ -125,7 +126,6 @@ impl ToSql for Type {
         buf.push_str(s);
     }
 }
-
 
 #[cfg(test)]
 mod test {
