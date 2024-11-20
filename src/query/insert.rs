@@ -3,7 +3,7 @@ use crate::util::SqlExtension;
 use crate::{Dialect, Select, ToSql};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum OnConflict {
     Ignore,
     Abort,
@@ -52,7 +52,7 @@ impl OnConflict {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Conflict {
     Columns(Vec<String>),
     ConstraintName(String),
@@ -127,6 +127,7 @@ impl ToSql for Values {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Value(Vec<String>);
 
 impl Value {
@@ -161,6 +162,7 @@ impl From<Vec<String>> for Value {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Values {
     Values(Vec<Value>),
     Select(Select),
@@ -201,6 +203,7 @@ impl Values {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Insert {
     pub schema: Option<String>,
     pub table: String,

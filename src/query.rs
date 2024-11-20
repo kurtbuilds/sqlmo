@@ -8,6 +8,7 @@ mod drop_table;
 mod insert;
 mod select;
 mod update;
+mod union;
 
 pub use insert::*;
 pub use select::*;
@@ -19,3 +20,4 @@ pub use create_schema::*;
 pub use create_table::*;
 pub use cte::*;
 pub use drop_table::*;
+pub use union::*;

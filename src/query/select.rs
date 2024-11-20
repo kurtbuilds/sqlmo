@@ -198,6 +198,19 @@ impl SelectColumn {
     }
 }
 
+impl<T: Into<String>> std::convert::From<T> for SelectColumn {
+    fn from(column: T) -> Self {
+        Self {
+            expression: SelectExpression::Column {
+                schema: None,
+                table: None,
+                column: column.into(),
+            },
+            alias: None,
+        }
+    }
+}
+
 impl ToSql for SelectColumn {
     fn write_sql(&self, buf: &mut String, _: Dialect) {
         use SelectExpression::*;
@@ -235,6 +248,16 @@ pub struct From {
     pub alias: Option<String>,
 }
 
+impl<T: Into<String>> std::convert::From<T> for From {
+    fn from(table: T) -> Self {
+        Self {
+            schema: None,
+            table: table.into(),
+            alias: None,
+        }
+    }
+}
+
 impl ToSql for From {
     fn write_sql(&self, buf: &mut String, _: Dialect) {
         buf.push_table_name(&self.schema, &self.table);
@@ -250,6 +273,12 @@ pub enum Where {
     And(Vec<Where>),
     Or(Vec<Where>),
     Raw(String),
+}
+
+impl std::convert::From<String> for Where {
+    fn from(s: String) -> Self {
+        Where::Raw(s)
+    }
 }
 
 impl Where {
