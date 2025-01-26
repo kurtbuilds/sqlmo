@@ -1,11 +1,14 @@
-use crate::{Dialect, Select, ToSql};
 use crate::query::Where;
 use crate::util::SqlExtension;
+use crate::{Dialect, Select, ToSql};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum JoinTable {
     Select(Select),
-    Table { schema: Option<String>, table: String },
+    Table {
+        schema: Option<String>,
+        table: String,
+    },
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -26,6 +29,12 @@ impl Default for JoinType {
 pub enum Criteria {
     On(Where),
     Using(Vec<String>),
+}
+
+impl From<Where> for Criteria {
+    fn from(where_: Where) -> Self {
+        Criteria::On(where_)
+    }
 }
 
 impl ToSql for Criteria {
@@ -83,16 +92,15 @@ impl Join {
     }
 
     pub fn on_raw(mut self, on: impl Into<String>) -> Self {
-        self.criteria = Criteria::On(Where::Raw(on.into()));
+        self.criteria = Criteria::On(Where::raw(on));
         self
     }
 }
 
-
 impl ToSql for Join {
     fn write_sql(&self, buf: &mut String, dialect: Dialect) {
-        use JoinType::*;
         use JoinTable::*;
+        use JoinType::*;
         match self.typ {
             Inner => buf.push_str("JOIN "),
             Left => buf.push_str("LEFT JOIN "),
@@ -111,12 +119,11 @@ impl ToSql for Join {
         }
         if let Some(alias) = &self.alias {
             buf.push_str(" AS ");
-            buf.push_str(alias);
+            buf.push_quoted(alias);
         }
         buf.push_sql(&self.criteria, dialect);
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -126,7 +133,10 @@ mod tests {
     fn test_basic() {
         let j = Join {
             typ: JoinType::Inner,
-            table: JoinTable::Table { schema: None, table: "foo".to_string() },
+            table: JoinTable::Table {
+                schema: None,
+                table: "foo".to_string(),
+            },
             alias: Some("bar".to_string()),
             criteria: Criteria::On(Where::Raw("bar.id = parent.bar_id".to_string())),
         };
@@ -146,5 +156,4 @@ mod tests {
             r#"JOIN "table" AS bar ON bar.id = parent.bar_id"#
         );
     }
-
 }

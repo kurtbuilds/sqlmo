@@ -101,7 +101,7 @@ impl Select {
     }
 
     pub fn where_raw(self, where_: impl Into<String>) -> Self {
-        self.where_(Where::Raw(where_.into()))
+        self.where_(Where::raw(where_))
     }
 
     pub fn group_by(mut self, group: &str) -> Self {
@@ -163,6 +163,13 @@ pub struct SelectColumn {
 }
 
 impl SelectColumn {
+    pub fn column(&self) -> Option<&str> {
+        match &self.expression {
+            SelectExpression::Column { column, .. } => Some(column),
+            _ => None,
+        }
+    }
+
     pub fn new(column: &str) -> Self {
         Self {
             expression: SelectExpression::Column {
@@ -272,12 +279,14 @@ impl ToSql for From {
 pub enum Where {
     And(Vec<Where>),
     Or(Vec<Where>),
+    #[deprecated]
     Raw(String),
+    Expr(Expr),
 }
 
 impl std::convert::From<String> for Where {
     fn from(s: String) -> Self {
-        Where::Raw(s)
+        Where::Expr(Expr::Raw(s))
     }
 }
 
@@ -287,12 +296,14 @@ impl Where {
         match self {
             And(v) => v.is_empty(),
             Or(v) => v.is_empty(),
+            #[allow(deprecated)]
             Raw(s) => s.is_empty(),
+            Expr(_) => false,
         }
     }
 
     pub fn raw(s: impl Into<String>) -> Self {
-        Where::Raw(s.into())
+        Where::Expr(Expr::Raw(s.into()))
     }
 }
 
@@ -307,8 +318,12 @@ impl ToSql for Where {
                 buf.push_sql_sequence(&v, " OR ", dialect);
                 buf.push(')');
             }
+            #[allow(deprecated)]
             Where::Raw(s) => {
                 buf.push_str(s);
+            }
+            Where::Expr(expr) => {
+                buf.push_sql(expr, dialect);
             }
         }
     }
