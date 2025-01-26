@@ -138,11 +138,11 @@ mod tests {
                 table: "foo".to_string(),
             },
             alias: Some("bar".to_string()),
-            criteria: Criteria::On(Where::Raw("bar.id = parent.bar_id".to_string())),
+            criteria: Criteria::On(Where::raw("bar.id = parent.bar_id".to_string())),
         };
         assert_eq!(
             j.to_sql(Dialect::Postgres),
-            r#"JOIN "foo" AS bar ON bar.id = parent.bar_id"#
+            r#"JOIN "foo" AS "bar" ON bar.id = parent.bar_id"#
         );
     }
 
@@ -153,7 +153,7 @@ mod tests {
             .on_raw("bar.id = parent.bar_id");
         assert_eq!(
             j.to_sql(Dialect::Postgres),
-            r#"JOIN "table" AS bar ON bar.id = parent.bar_id"#
+            r#"JOIN "table" AS "bar" ON bar.id = parent.bar_id"#
         );
     }
 }

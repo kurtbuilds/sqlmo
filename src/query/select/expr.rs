@@ -66,8 +66,6 @@ pub enum Expr {
         table: Option<String>,
         column: String,
     },
-    #[deprecated]
-    Eq(Box<Expr>, Box<Expr>),
     BinOp(Operation, Box<Expr>, Box<Expr>),
 }
 
@@ -152,12 +150,6 @@ impl ToSql for Expr {
                     buf.push('.');
                 }
                 buf.push_quoted(column);
-            }
-            #[allow(deprecated)]
-            Expr::Eq(l, r) => {
-                buf.push_sql(l.as_ref(), dialect);
-                buf.push_str(" = ");
-                buf.push_sql(r.as_ref(), dialect);
             }
             Expr::BinOp(op, l, r) => {
                 buf.push_sql(l.as_ref(), dialect);
