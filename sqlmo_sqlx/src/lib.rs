@@ -2,12 +2,11 @@ use std::str::FromStr;
 use anyhow::{Error, Result};
 use itertools::Itertools;
 use sqlx::PgConnection;
-use async_trait::async_trait;
 
 use sqlmo::{Schema, Column, Table, schema};
 
 
-#[async_trait]
+#[allow(async_fn_in_trait)]
 pub trait FromPostgres: Sized {
     async fn try_from_postgres(conn: &mut PgConnection, schema_name: &str) -> Result<Self>;
 }
@@ -97,7 +96,6 @@ impl TryInto<Column> for SchemaColumn {
     }
 }
 
-#[async_trait]
 impl FromPostgres for Schema {
     async fn try_from_postgres(conn: &mut PgConnection, schema_name: &str) -> Result<Schema> {
         let column_schemas = query_schema_columns(conn, schema_name).await?;
