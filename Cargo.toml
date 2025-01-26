@@ -17,7 +17,7 @@ documentation = "https://docs.rs/sqlmo"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace.dependencies]
-sqlmo = { path = "." }
+sqlmo = { path = ".", version = "0.23" }
 
 [dependencies]
 anyhow = "1.0.89"
