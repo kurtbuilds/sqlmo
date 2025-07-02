@@ -1,6 +1,6 @@
 [package]
 name = "sqlmo_sqlx"
-version = "0.24.0"
+version = "0.24.1"
 edition = "2021"
 description = "Crate to create sqlmo models from sqlx database (currently just postgres)"
 license = "MIT"
