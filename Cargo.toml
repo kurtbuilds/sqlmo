@@ -1,12 +1,9 @@
 [workspace]
-members = [
-    "sqlmo_openapi",
-    "sqlmo_sqlx",
-]
+members = ["sqlmo_openapi", "sqlmo_sqlx"]
 
 [package]
 name = "sqlmo"
-version = "0.23.1"
+version = "0.23.2"
 edition = "2021"
 description = "SQL data primitives. Use it to generate SQL queries, auto-generate SQL migrations, and more."
 license = "MIT"
@@ -22,6 +19,7 @@ sqlmo = { path = ".", version = "0.23" }
 [dependencies]
 anyhow = "1.0.89"
 serde = { version = "1.0.210", features = ["derive"], optional = true }
+topo_sort = "0.4.0"
 tracing = { version = "0.1.40", optional = true }
 
 [dev-dependencies]
