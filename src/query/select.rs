@@ -347,9 +347,9 @@ pub struct OrderBy {
 }
 
 impl OrderBy {
-    pub fn new(column: String) -> Self {
+    pub fn new(column: &str) -> Self {
         OrderBy {
-            column,
+            column: column.to_string(),
             direction: None,
             nulls: None,
         }
