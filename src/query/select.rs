@@ -117,20 +117,17 @@ impl Select {
         self
     }
 
-    pub fn order_by(mut self, order: &str, direction: Direction) -> Self {
-        self.order.push(OrderBy {
-            column: order.to_string(),
-            direction,
-        });
+    pub fn order_by(mut self, order: OrderBy) -> Self {
+        self.order.push(order);
         self
     }
 
     pub fn order_asc(self, order: &str) -> Self {
-        self.order_by(order, Direction::Asc)
+        self.order_by(OrderBy::new(order.to_string()).asc())
     }
 
     pub fn order_desc(self, order: &str) -> Self {
-        self.order_by(order, Direction::Desc)
+        self.order_by(OrderBy::new(order.to_string()).desc())
     }
 
     pub fn limit(mut self, limit: usize) -> Self {
@@ -336,19 +333,74 @@ pub enum Direction {
     Desc,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NullsOrder {
+    First,
+    Last,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OrderBy {
     pub column: String,
-    pub direction: Direction,
+    pub direction: Option<Direction>,
+    pub nulls: Option<NullsOrder>,
+}
+
+impl OrderBy {
+    pub fn new(column: String) -> Self {
+        OrderBy {
+            column,
+            direction: None,
+            nulls: None,
+        }
+    }
+
+    pub fn direction(mut self, direction: Direction) -> Self {
+        self.direction = Some(direction);
+        self
+    }
+
+    pub fn asc(mut self) -> Self {
+        self.direction = Some(Direction::Asc);
+        self
+    }
+
+    pub fn desc(mut self) -> Self {
+        self.direction = Some(Direction::Desc);
+        self
+    }
+
+    pub fn nulls(mut self, nulls: NullsOrder) -> Self {
+        self.nulls = Some(nulls);
+        self
+    }
+
+    pub fn nulls_first(mut self) -> Self {
+        self.nulls = Some(NullsOrder::First);
+        self
+    }
+
+    pub fn nulls_last(mut self) -> Self {
+        self.nulls = Some(NullsOrder::Last);
+        self
+    }
 }
 
 impl ToSql for OrderBy {
     fn write_sql(&self, buf: &mut String, _: Dialect) {
         use Direction::*;
         buf.push_str(&self.column);
-        match self.direction {
-            Asc => buf.push_str(" ASC"),
-            Desc => buf.push_str(" DESC"),
+        if let Some(direction) = self.direction {
+            match direction {
+                Asc => buf.push_str(" ASC"),
+                Desc => buf.push_str(" DESC"),
+            }
+        }
+        if let Some(nulls) = self.nulls {
+            match nulls {
+                NullsOrder::First => buf.push_str(" NULLS FIRST"),
+                NullsOrder::Last => buf.push_str(" NULLS LAST"),
+            }
         }
     }
 }
