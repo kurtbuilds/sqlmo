@@ -123,11 +123,11 @@ impl Select {
     }
 
     pub fn order_asc(self, order: &str) -> Self {
-        self.order_by(OrderBy::new(order.to_string()).asc())
+        self.order_by(OrderBy::new(order).asc())
     }
 
     pub fn order_desc(self, order: &str) -> Self {
-        self.order_by(OrderBy::new(order.to_string()).desc())
+        self.order_by(OrderBy::new(order).desc())
     }
 
     pub fn limit(mut self, limit: usize) -> Self {

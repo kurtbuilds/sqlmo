@@ -8,6 +8,8 @@ help:
 run *ARGS:
     cargo run {{ARGS}}
 
+check:
+    cargo check
 test *ARGS='':
     cargo test --all-features "$@"
 
